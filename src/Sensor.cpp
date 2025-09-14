@@ -19,7 +19,7 @@ SensorData Sensor::readData()
     RTCTime currentTime;
     RTC.getTime(currentTime);
     time_t currentTimeUnix = currentTime.getUnixTime();
-    if ((currentTimeUnix - lastCheckedUnixTime) < 6)
+    if ((currentTimeUnix - lastCheckedUnixTime) < 600)
     {
         return cacheData;
     } else {
