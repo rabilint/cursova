@@ -6,7 +6,8 @@ Sensor mySensor;
 constexpr byte numChars = 32;
 char receivedChars[numChars];
 boolean newData = false;
-
+constexpr long sensorReadInterval = 5000;
+unsigned long lastSensorReadTime = 0;
 
 constexpr int yellowLedPin = 2;
 constexpr int redLedPin = 4;
@@ -49,37 +50,37 @@ void receiveSerialData()
 
 void processCommand()
 {
-  Serial.print("processCommand: ");
-  Serial.println(receivedChars);
+  // Serial.print("processCommand: ");
+  // Serial.println(receivedChars);
   if (strcmp(receivedChars, "LED_RED_ON") == 0)
   {
     digitalWrite(redLedPin, HIGH);
-    Serial.println("ACK: Red LED turned ON");
+    // Serial.println("ACK: Red LED turned ON");
   }
   if (strcmp(receivedChars, "LED_RED_OFF") == 0)
   {
     digitalWrite(redLedPin, LOW);
-    Serial.println("ACK: Red LED turned OFF");
+    // Serial.println("ACK: Red LED turned OFF");
   }
   if (strcmp(receivedChars, "LED_GREEN_ON") == 0)
   {
     digitalWrite(greenLedPin, HIGH);
-    Serial.println("ACK: Green LED turned ON");
+    // Serial.println("ACK: Green LED turned ON");
   }
   if (strcmp(receivedChars, "LED_GREEN_OFF") == 0)
   {
     digitalWrite(greenLedPin, LOW);
-    Serial.println("ACK: Green LED turned OFF");
+    // Serial.println("ACK: Green LED turned OFF");
   }
   if (strcmp(receivedChars, "LED_YELLOW_ON") == 0)
   {
     digitalWrite(yellowLedPin, HIGH);
-    Serial.println("ACK: Yellow LED turned ON");
+    // Serial.println("ACK: Yellow LED turned ON");
   }
   if (strcmp(receivedChars, "LED_YELLOW_OFF") == 0)
   {
     digitalWrite(yellowLedPin, LOW);
-    Serial.println("ACK: Yellow LED turned OFF");
+    // Serial.println("ACK: Yellow LED turned OFF");
   }
 
 }
@@ -97,22 +98,22 @@ void setup() {
 }
 
 void loop() {
-
-  SensorData currentData = mySensor.readData();
-  // Serial.print("T:");
-  // Serial.print(currentData.temperature);
-  // Serial.print(";H:");
-  // Serial.print(currentData.humidity);
-  // Serial.println();
-
   receiveSerialData();
   if (newData == true)
   {
-    Serial.println("New data received");
-    Serial.println(receivedChars);
+    // Serial.println("New data received");
+    // Serial.println(receivedChars);
     processCommand();
     newData = false;
   }
-
-
+  unsigned long currentTime = millis();
+  if (currentTime - lastSensorReadTime >= sensorReadInterval) {
+    lastSensorReadTime = currentTime;
+    SensorData currentData = mySensor.readData();
+    Serial.print("T:");
+    Serial.print(currentData.temperature);
+    Serial.print(";H:");
+    Serial.print(currentData.humidity);
+    Serial.println();
+  };
 }
