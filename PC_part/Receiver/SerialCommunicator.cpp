@@ -8,7 +8,6 @@
 
 SerialCommunicator::SerialCommunicator(const std::string& port, uint32_t baudrate) {
     try {
-        // Налаштовуємо таймаут: чекати до 1 секунди на дані
         serial::Timeout timeout = serial::Timeout::simpleTimeout(1000);
         serial_port.setPort(port);
         serial_port.setBaudrate(baudrate);
@@ -32,13 +31,11 @@ bool SerialCommunicator::isConnected() const {
 
 std::string SerialCommunicator::readLine() {
     if (!isConnected()) return "";
-    // readline() ідеально підходить для нашого протоколу
     return serial_port.readline();
 }
 
 void SerialCommunicator::writeLine(const std::string& line) {
     if (!isConnected()) return;
-    // Записуємо рядок і додаємо символ нового рядка
     serial_port.write(line + "\n");
 }
 
@@ -51,7 +48,7 @@ void serialReaderThread(SerialCommunicator& serial)
         std::string line = serial.readLine();
         if (line.length() > 0)
         {
-            std::cout << line << std::endl;
+
         }
     }
     std::cout << "[Serial Thread] Exiting." << std::endl;

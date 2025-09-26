@@ -10,13 +10,12 @@
 
 class SerialCommunicator {
 public:
-    // Конструктор приймає назву порту та швидкість
     SerialCommunicator(const std::string& port, uint32_t baudrate);
     ~SerialCommunicator();
 
     bool isConnected() const;
-    std::string readLine(); // Метод для читання команд/даних
-    void writeLine(const std::string& line); // Метод для відправки команд
+    std::string readLine();
+    void writeLine(const std::string& line);
 
 private:
     serial::Serial serial_port;
