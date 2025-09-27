@@ -31,7 +31,7 @@ class DBManager
 
 
 private:
-    sqlite3* db_handle;
+    sqlite3* db_handle{};
     std::mutex db_mutex;
     void createTables();
 
