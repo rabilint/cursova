@@ -3,3 +3,5 @@
 .iws
 workspace.xml
 tasks.xml
+data_source_mapping.xml
+dataSources.xml

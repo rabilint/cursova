@@ -143,7 +143,7 @@ std::vector<SensorDataStruct> DBManager::getReadingsInTimeRange(time_t start_fro
 
 // For Actuators
 
-int DBManager::getActuatorID(const std::string& Actuator)
+int DBManager::getActuatorID(const std::string& Actuator) // Technical func
 {
     sqlite3_stmt* stmt = nullptr;
     const char* sql = "SELECT ActuatorID FROM Actuator WHERE Name = ?";

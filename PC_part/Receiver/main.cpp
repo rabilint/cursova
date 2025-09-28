@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <thread>
 #include <atomic>
@@ -12,10 +13,12 @@
 const std::map<std::string, std::string> commands = {
     {"History", "display records from and to custom time."},
     {"Check_DB", "display last 10 records."},
-    {"Exit","Close Program"},
-    {"LED_RED_ON","Turn on red LED"},
-    {"LED_RED_OFF", "Turn off red LED"},
-    {"",""}
+    {"Exit","Close Program."},
+    {"LED_RED_ON","Turn on red LED."},
+    {"LED_RED_OFF", "Turn off red LED."},
+    {"Add_actuator","Add new actuator."},
+    {"Delete_Actuator","Delete actuator."},
+    {"Check_last_actuator_events","Check actuator events history."}
 };
 
 SerialCommunicator my_cerial("/dev/ttyACM0",9600);
@@ -48,6 +51,7 @@ int main()
 {
     SerialCommunicator my_serial("/dev/ttyACM0",9600);
     DBManager myDB("../test.db");
+    DBManager myActuator("../ActuatorEvents.db");
 
 
     if (!my_serial.isConnected())
@@ -68,13 +72,25 @@ int main()
             running = false;
         } else if ( command == "LED_RED_ON")
         {
-            my_serial.writeLine("LED_RED_ON");
-            std::cout << "LED_RED_ON" << std::endl;
+            if (myActuator.addEvent("LED_RED_ON", 1))
+            {
+                my_serial.writeLine("LED_RED_ON");
+                std::cout << "LED_RED_ON" << std::endl;
+            }else
+            {
+                std::cout << "Action failed. Make sure you add actuator." << std::endl;
+            }
         }
         else if (command == "LED_RED_OFF")
         {
-            my_serial.writeLine("LED_RED_OFF");
-            std::cout << "LED_RED_OFF" << std::endl;
+            if (myActuator.addEvent("LED_RED_FF", 0))
+            {
+                my_serial.writeLine("LED_RED_OFF");
+                std::cout << "LED_RED_OFF" << std::endl;
+            }else
+            {
+                std::cout << "Action failed. Make sure you add actuator." << std::endl;
+            }
         }else if (command == "Check_DB")
         {
             records = myDB.getLastNReadings(10);
@@ -83,7 +99,29 @@ int main()
             {
                 std::cout << record.timestamp << " " << record.temperature << " " << record.humidity << std::endl;
             }
-        }else if (command.substr(0,13 ) == "History")
+        }else if (command == "Add_actuator"){
+            std::cout << "Write Name of new actuator." << std::endl;
+            std::string actuator;
+            std::getline(std::cin, actuator);
+            std::ranges::replace(actuator,' ', '_');
+            std::ranges::transform(actuator, actuator.begin(), ::toupper);
+            myActuator.addActuator(actuator);
+        }else if (command == "Delete_Actuator")
+        {
+            std::cout << "Write name of actuator you want to delete." << std::endl;
+            std::string actuator;
+            std::getline(std::cin, actuator);
+            std::ranges::replace(actuator, ' ', '_');
+            std::ranges::transform(actuator, actuator.begin(), ::toupper);
+            myActuator.deleteActuator(actuator);
+        }else if (command == "Check_last_actuator_events")
+        {
+            int n = 10;
+            std::cout << "How long log you want?" << std::endl;
+            std::cin >> n;
+            myActuator.getActuatorsData(n);
+        }
+        else if (command.substr(0,13 ) == "History")
         {
 
             struct tm * timeinfo;
