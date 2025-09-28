@@ -14,7 +14,8 @@ const std::map<std::string, std::string> commands = {
     {"Check_DB", "display last 10 records."},
     {"Exit","Close Program"},
     {"LED_RED_ON","Turn on red LED"},
-    {"LED_RED_OFF", "Turn off red LED"}
+    {"LED_RED_OFF", "Turn off red LED"},
+    {"",""}
 };
 
 SerialCommunicator my_cerial("/dev/ttyACM0",9600);
