@@ -16,6 +16,13 @@ struct SensorDataStruct
     float humidity;
 };
 
+struct ActuatorDataStruct
+{
+    int ActuatorID;
+    int State;
+    time_t timestamp;
+};
+
 class DBManager
 {
     public:
@@ -29,7 +36,11 @@ class DBManager
     std::vector<SensorDataStruct> getLastNReadings(int n);
     std::vector<SensorDataStruct> getReadingsInTimeRange(time_t start_from, time_t endWhen);
 
-
+    bool addEvent(const std::string& Actuator, const int& state );
+    int getActuatorID(const std::string& Actuator);
+    std::vector<ActuatorDataStruct> getActuatorsData(int n);
+    bool deleteActuator(const std::string& ActuatorName);
+    bool addActuator(const std::string& Actuator);
 private:
     sqlite3* db_handle{};
     std::mutex db_mutex;
