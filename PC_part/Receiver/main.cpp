@@ -4,6 +4,7 @@
 #include <atomic>
 #include <sstream>
 #include <cstdio>
+#include <limits>
 #include "SerialCommunicator.h"
 #include <map>
 #include "DatabaseManager.h"
@@ -14,11 +15,10 @@ const std::map<std::string, std::string> commands = {
     {"History", "display records from and to custom time."},
     {"Check_DB", "display last 10 records."},
     {"Exit","Close Program."},
-    {"LED_RED_ON","Turn on red LED."},
-    {"LED_RED_OFF", "Turn off red LED."},
     {"Add_actuator","Add new actuator."},
     {"Delete_Actuator","Delete actuator."},
-    {"Check_last_actuator_events","Check actuator events history."}
+    {"Check_last_actuator_events","Check actuator events history."},
+    {"Make_action","Managing actuator"},
 };
 
 SerialCommunicator my_cerial("/dev/ttyACM0",9600);
@@ -51,7 +51,7 @@ int main()
 {
     SerialCommunicator my_serial("/dev/ttyACM0",9600);
     DBManager myDB("../test.db");
-    DBManager myActuator("../ActuatorEvents.db");
+    DBManager myActuator("../ActuatorEvents.db", true);
 
 
     if (!my_serial.isConnected())
@@ -70,27 +70,66 @@ int main()
         if (command == "Exit")
         {
             running = false;
-        } else if ( command == "LED_RED_ON")
-        {
-            if (myActuator.addEvent("LED_RED_ON", 1))
-            {
-                my_serial.writeLine("LED_RED_ON");
-                std::cout << "LED_RED_ON" << std::endl;
-            }else
-            {
-                std::cout << "Action failed. Make sure you add actuator." << std::endl;
-            }
         }
-        else if (command == "LED_RED_OFF")
+        else if (command == "Make_action")
         {
-            if (myActuator.addEvent("LED_RED_FF", 0))
+            int input_index = -1;
+            std::string action;
+            myActuator.listActuators();
+            std::cout << "Select actuator by writing it's ID" << std::endl;
+            std::cin >> input_index ;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            if (std::cin.fail() || input_index <=0)
             {
-                my_serial.writeLine("LED_RED_OFF");
-                std::cout << "LED_RED_OFF" << std::endl;
+                std::cerr << "ERR: Invalid ID entered." << std::endl;
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             }else
             {
-                std::cout << "Action failed. Make sure you add actuator." << std::endl;
+                std::cout << "You want to ON/OFF ?" << std::endl;
+                std::string ActuatorName = myActuator.getActuatorName(input_index);
+                if (ActuatorName.empty())
+                {
+                    std::cerr << "ERR: Actuator with ID " << input_index << " not found." << std::endl;
+                }else
+                {
+                    std::getline(std::cin, action);
+                    std::ranges::transform(action, action.begin() , ::toupper);
+
+                    int newState = -1;
+                    std::string commandSuffix;
+                    if (input_index > 0)
+                    {
+                        if (action == "ON")
+                        {
+                            newState = 1;
+                            commandSuffix = "_ON";
+                        }else if (action == "OFF")
+                        {
+                            newState = 0;
+                            commandSuffix = "_OFF";
+                        }
+
+                        if (newState != -1)
+                        {
+                            if (myActuator.UpdateActuatorState(input_index, newState))
+                            {
+                                std::string commandToSend = ActuatorName + commandSuffix;
+                                my_serial.writeLine(commandToSend);
+                                std::cout << "Command sent: " << commandToSend << std::endl;
+                            }
+                        }else
+                        {
+                            std::cerr << "ERR: Failed to update database." << std::endl;
+                        }
+                    }else
+                    {
+                        std::cerr << "ERR: Invalid action. Please enter ON or OFF." << std::endl;
+                    }
+                }
             }
+
+
         }else if (command == "Check_DB")
         {
             records = myDB.getLastNReadings(10);

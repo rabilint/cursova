@@ -8,9 +8,8 @@
 
 DBManager::DBManager(const std::string& fileName)
 {
-    int rc;
-    rc = sqlite3_open(fileName.c_str(), &db_handle);
-    if (rc)
+
+    if (sqlite3_open(fileName.c_str(), &db_handle))
     {
         std::cerr << "Can't open database " << fileName << std::endl;
         return;
@@ -19,6 +18,16 @@ DBManager::DBManager(const std::string& fileName)
 
 }
 
+DBManager::DBManager(const std::string& fileName, bool isActuator)
+{
+    if (sqlite3_open(fileName.c_str(), &db_handle))
+    {
+        std::cerr << "Can't open database " << fileName << std::endl;
+        return;
+    }
+    createActuatorTables();
+    createActuatorsLib();
+}
 
 DBManager::~DBManager()
 {
@@ -30,6 +39,7 @@ DBManager::~DBManager()
 void DBManager::createTables()
 {
     std::lock_guard<std::mutex> lock(db_mutex);
+
     const char* sql = "CREATE TABLE IF NOT EXISTS SensorReadings (ReadingID INTEGER PRIMARY KEY AUTOINCREMENT, Timestamp INTEGER NOT NULL, Temperature REAL NOT NULL, Humidity REAL NOT NULL); ";
 
     char* errMsg = nullptr;
@@ -39,6 +49,32 @@ void DBManager::createTables()
         sqlite3_free(errMsg);
     }
 }
+
+void DBManager::createActuatorsLib()
+{
+    std::lock_guard<std::mutex> lock(db_mutex);
+    const char* sql = "CREATE TABLE IF NOT EXISTS Actuator (ActuatorID INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT NOT NULL, State INTEGER NULL DEFAULT 0 )";
+    char* errMsg = nullptr;
+    if (sqlite3_exec(db_handle, sql, nullptr, nullptr, &errMsg) != SQLITE_OK)
+    {
+        std::cerr << "SQL error: " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+    }
+}
+
+void DBManager::createActuatorTables()
+{
+    std::lock_guard<std::mutex> lock(db_mutex);
+    const char* sql = "CREATE TABLE IF NOT EXISTS ActuatorEvents (EventID INTEGER PRIMARY KEY AUTOINCREMENT, ActuatorID INTEGER NOT NULL, State INTEGER NOT NULL, Timestamp INTEGER NOT NULL, FOREIGN KEY (ActuatorID) REFERENCES Actuators(ActuatorID))";
+    char* errMsg = nullptr;
+    if (sqlite3_exec(db_handle, sql, nullptr, nullptr, &errMsg) != SQLITE_OK)
+    {
+        std::cerr << "SQL error: " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+    }
+
+}
+
 
 bool DBManager::insertData(float temperature, float humidity)
 {
@@ -297,4 +333,86 @@ bool DBManager::addActuator(const std::string& Actuator)
         return false;
     }
     return true;
+}
+
+void DBManager::listActuators()
+{
+    std::lock_guard<std::mutex> lock(db_mutex);
+    sqlite3_stmt* stmt = nullptr;
+
+    const char* sql = "SELECT * FROM Actuator ";
+    if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr) != SQLITE_OK)
+    {
+        std::cerr << "Preparation failed: " << sqlite3_errmsg(db_handle) << std::endl;
+        return;
+    }
+    while (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        ActuatorStruct record{};
+        record.ActuatorID = sqlite3_column_int(stmt, 0);
+        const char* name_ptr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        record.ActuatorName = name_ptr ? std::string(name_ptr) : std::string{};
+        record.State = sqlite3_column_int(stmt, 2);
+        std::cout <<"| ID: " <<record.ActuatorID << " | Name: "<< record.ActuatorName << " | Status: ";
+        if (record.State == 1)
+        {
+            std::cout << record.State << "ON |" << std::endl;
+        }else
+        {
+            std::cout << record.State << "OFF |" << std::endl;
+        }
+    }
+}
+
+
+bool DBManager::UpdateActuatorState(const int& ActuatorID, const int& state)
+{
+    std::lock_guard<std::mutex> lock(db_mutex);
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "UPDATE Actuator SET State = ? WHERE ActuatorID = ?";
+    if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr) != SQLITE_OK)
+    {
+        std::cerr << "Preparation failed: " << sqlite3_errmsg(db_handle) << std::endl;
+        return false;
+    }
+    sqlite3_bind_int(stmt, 1, state);
+    sqlite3_bind_int(stmt, 2, ActuatorID);
+    if (sqlite3_step(stmt) != SQLITE_DONE)
+    {
+        std::cerr << "SQL error: " << sqlite3_errmsg(db_handle) << std::endl;
+        sqlite3_finalize(stmt);
+        return false;
+    }
+    if (sqlite3_finalize(stmt) != SQLITE_OK)
+    {
+        std::cerr << "Finalize failed" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+std::string DBManager::getActuatorName(const int& ActuatorID)
+{
+    std::lock_guard<std::mutex> lock(db_mutex);
+    sqlite3_stmt* stmt = nullptr;
+    std::string ActuatorName = "";
+    const char* sql = "SELECT Name FROM Actuator WHERE ActuatorID = ?";
+
+    if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr) != SQLITE_OK)
+    {
+        std::cerr << "Preparation failed: " << sqlite3_errmsg(db_handle) << std::endl;
+        return std::string{};
+    }
+    sqlite3_bind_int(stmt, 1, ActuatorID);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        ActuatorName = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+    }
+    if (sqlite3_finalize(stmt) != SQLITE_OK)
+    {
+        std::cerr << "Finalize failed" << std::endl;
+        return std::string{};
+    }
+    return ActuatorName;
 }

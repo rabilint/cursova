@@ -23,10 +23,19 @@ struct ActuatorDataStruct
     time_t timestamp;
 };
 
+struct ActuatorStruct
+{
+    int ActuatorID;
+    std::string ActuatorName;
+    int State;
+};
+
+
 class DBManager
 {
     public:
     explicit DBManager(const std::string& fileName);
+    explicit DBManager(const std::string& fileName, bool isActuator);
     ~DBManager();
 
     DBManager(const DBManager&) = delete;
@@ -41,10 +50,16 @@ class DBManager
     std::vector<ActuatorDataStruct> getActuatorsData(int n);
     bool deleteActuator(const std::string& ActuatorName);
     bool addActuator(const std::string& Actuator);
+    void listActuators();
+    std::string getActuatorName(const int& ActuatorID);
+    bool UpdateActuatorState(const int& ActuatorID, const int& state);
+
 private:
     sqlite3* db_handle{};
     std::mutex db_mutex;
     void createTables();
+    void createActuatorTables();
+    void createActuatorsLib();
 
 };
 
