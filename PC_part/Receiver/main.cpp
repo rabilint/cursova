@@ -116,6 +116,7 @@ int main()
                             {
                                 std::string commandToSend = ActuatorName + commandSuffix;
                                 my_serial.writeLine(commandToSend);
+                                myActuator.addEvent(ActuatorName, newState);
                                 std::cout << "Command sent: " << commandToSend << std::endl;
                             }
                         }else
@@ -156,9 +157,15 @@ int main()
         }else if (command == "Check_last_actuator_events")
         {
             int n = 10;
+            std::vector <ActuatorDataStruct> actuator_events;
+            actuator_events.reserve(n);
             std::cout << "How long log you want?" << std::endl;
             std::cin >> n;
-            myActuator.getActuatorsData(n);
+            actuator_events = myActuator.getActuatorsData(n);
+            for (auto event : actuator_events)
+            {
+                std::cout << "| ID: " << event.ActuatorID << " | Name: " << event.ActuatorName << " | State: " << event.State << " | Time: " << event.timestamp << std::endl;
+            }
         }
         else if (command.substr(0,13 ) == "History")
         {

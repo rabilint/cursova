@@ -237,35 +237,6 @@ bool DBManager::addEvent(const std::string& Actuator, const int& state )
     return true;
 }
 
-std::vector<ActuatorDataStruct> DBManager::getActuatorsData(int n)
-{
-    std::lock_guard<std::mutex> lock(db_mutex);
-    std::vector<ActuatorDataStruct> records;
-    records.reserve(n);
-    const char* sql = "SELECT ActuatorID, State, Timestamp FROM ActuatorEvents ORDER BY Timestamp DESC LIMIT ?";
-    sqlite3_stmt* stmt = nullptr;
-
-    if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr) != SQLITE_OK)
-    {
-        std::cerr << "Preparation failed: " << sqlite3_errmsg(db_handle) << std::endl;
-        return records;
-    }
-    sqlite3_bind_int(stmt, 1, n);
-    while (sqlite3_step(stmt) == SQLITE_ROW)
-    {
-        ActuatorDataStruct record{};
-        record.ActuatorID = sqlite3_column_int(stmt, 0);
-        record.State = sqlite3_column_int(stmt, 1);
-        record.timestamp = sqlite3_column_int64(stmt, 2);
-        records.push_back(record);
-    }
-    if (sqlite3_finalize(stmt) != SQLITE_OK)
-    {
-        std::cerr << "Finalize failed" << std::endl;
-    }
-    return records;
-}
-
 bool DBManager::deleteActuator(const std::string& ActuatorName)
 {
     std::lock_guard<std::mutex> lock(db_mutex);
@@ -391,9 +362,9 @@ bool DBManager::UpdateActuatorState(const int& ActuatorID, const int& state)
     return true;
 }
 
-std::string DBManager::getActuatorName(const int& ActuatorID)
+std::string DBManager::getActuatorName(const int& ActuatorID) const
 {
-    std::lock_guard<std::mutex> lock(db_mutex);
+    // std::lock_guard<std::mutex> lock(db_mutex);
     sqlite3_stmt* stmt = nullptr;
     std::string ActuatorName = "";
     const char* sql = "SELECT Name FROM Actuator WHERE ActuatorID = ?";
@@ -415,4 +386,34 @@ std::string DBManager::getActuatorName(const int& ActuatorID)
         return std::string{};
     }
     return ActuatorName;
+}
+
+std::vector<ActuatorDataStruct> DBManager::getActuatorsData(int n)
+{
+    std::lock_guard<std::mutex> lock(db_mutex);
+    std::vector<ActuatorDataStruct> records;
+    records.reserve(n);
+    const char* sql = "SELECT ActuatorID, State, Timestamp FROM ActuatorEvents ORDER BY Timestamp DESC LIMIT ?";
+    sqlite3_stmt* stmt = nullptr;
+
+    if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr) != SQLITE_OK)
+    {
+        std::cerr << "Preparation failed: " << sqlite3_errmsg(db_handle) << std::endl;
+        return records;
+    }
+    sqlite3_bind_int(stmt, 1, n);
+    while (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        ActuatorDataStruct record{};
+        record.ActuatorID = sqlite3_column_int(stmt, 0);
+        record.State = sqlite3_column_int(stmt, 1);
+        record.timestamp = sqlite3_column_int64(stmt, 2);
+        record.ActuatorName = getActuatorName(record.ActuatorID);
+        records.push_back(record);
+    }
+    if (sqlite3_finalize(stmt) != SQLITE_OK)
+    {
+        std::cerr << "Finalize failed" << std::endl;
+    }
+    return records;
 }

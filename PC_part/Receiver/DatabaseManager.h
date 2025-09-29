@@ -20,6 +20,7 @@ struct ActuatorDataStruct
 {
     int ActuatorID;
     int State;
+    std::string ActuatorName;
     time_t timestamp;
 };
 
@@ -51,7 +52,7 @@ class DBManager
     bool deleteActuator(const std::string& ActuatorName);
     bool addActuator(const std::string& Actuator);
     void listActuators();
-    std::string getActuatorName(const int& ActuatorID);
+    std::string getActuatorName(const int& ActuatorID) const;
     bool UpdateActuatorState(const int& ActuatorID, const int& state);
 
 private:
