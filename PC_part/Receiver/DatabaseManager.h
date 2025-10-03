@@ -51,9 +51,11 @@ class DBManager
     std::vector<ActuatorDataStruct> getActuatorsData(int n);
     bool deleteActuator(const std::string& ActuatorName);
     bool addActuator(const std::string& Actuator);
-    void listActuators();
+    std::vector<ActuatorStruct> listActuators();
     std::string getActuatorName(const int& ActuatorID) const;
     bool UpdateActuatorState(const int& ActuatorID, const int& state);
+
+
 
 private:
     sqlite3* db_handle{};

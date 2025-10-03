@@ -306,7 +306,7 @@ bool DBManager::addActuator(const std::string& Actuator)
     return true;
 }
 
-void DBManager::listActuators()
+std::vector<ActuatorStruct> DBManager::listActuators()
 {
     std::lock_guard<std::mutex> lock(db_mutex);
     sqlite3_stmt* stmt = nullptr;
@@ -315,24 +315,24 @@ void DBManager::listActuators()
     if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr) != SQLITE_OK)
     {
         std::cerr << "Preparation failed: " << sqlite3_errmsg(db_handle) << std::endl;
-        return;
+        return std::vector<ActuatorStruct>{};
     }
+    std::vector<ActuatorStruct> ActuatorList{};
     while (sqlite3_step(stmt) == SQLITE_ROW)
     {
-        ActuatorStruct record{};
-        record.ActuatorID = sqlite3_column_int(stmt, 0);
+        ActuatorStruct Actuator;
+        Actuator.ActuatorID = sqlite3_column_int(stmt, 0); //id
+
+        //name
         const char* name_ptr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-        record.ActuatorName = name_ptr ? std::string(name_ptr) : std::string{};
-        record.State = sqlite3_column_int(stmt, 2);
-        std::cout <<"| ID: " <<record.ActuatorID << " | Name: "<< record.ActuatorName << " | Status: ";
-        if (record.State == 1)
-        {
-            std::cout << record.State << "ON |" << std::endl;
-        }else
-        {
-            std::cout << record.State << "OFF |" << std::endl;
-        }
+        Actuator.ActuatorName = name_ptr ? std::string(name_ptr) : std::string{};
+
+        //state
+        Actuator.State = sqlite3_column_int(stmt, 2);
+
+        ActuatorList.push_back(Actuator);
     }
+    return ActuatorList;
 }
 
 
