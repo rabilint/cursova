@@ -2,7 +2,7 @@
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
     <data-source source="LOCAL" name="ActuatorEvents.db" uuid="3aec2871-f3f8-446b-9559-5c6036c03445">
-      <driver-ref>sqlite.xerial</driver-ref>
+      <driver-ref>435b130d-3575-40c4-bda5-e734c9ca4eb0</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/ActuatorEvents.db</jdbc-url>
@@ -66,6 +66,13 @@
           <url>file://$APPLICATION_CONFIG_DIR$/jdbc-drivers/Xerial SQLiteJDBC/3.45.1/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar</url>
         </library>
       </libraries>
+    </data-source>
+    <data-source source="LOCAL" name="SensorDataDB" uuid="1ec53d34-3813-416b-90c0-7558835e8bbf">
+      <driver-ref>sqlite.xerial</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/SensorData.db</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>
 </project>

@@ -53,7 +53,7 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
             {
 
                 std::vector<ActuatorStruct> actuators;
-                actuators = DB.listActuators(); //Отримуємо vector.
+                actuators = DB.actuatorManager().listActuators(); //Отримуємо vector.
                 serial.writeLine("Take: *" + std::to_string(actuators.size()) + "*");
                 for (const ActuatorStruct& actuator : actuators)
                 {
@@ -76,7 +76,7 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
                     float humidity = std::stof(hum);
 
 
-                    if (DB.insertData(temperature, humidity))
+                    if (DB.sensorManager().insertData(temperature, humidity))
                     {
                         // std::cout<< "success" << std::endl;
                     }else

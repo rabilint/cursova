@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "RTC.h"
+#include "Arduino_LED_Matrix.h"
 #include "Sensor.h"
 
 Sensor mySensor;
@@ -145,6 +146,8 @@ void processCommand(  )
   }
 }
 
+ArduinoLEDMatrix matrix;
+
 void setup() {
 
   Serial.begin(9600);
@@ -156,11 +159,17 @@ void setup() {
   pinMode(redLedPin, OUTPUT);
   pinMode(greenLedPin, OUTPUT);
 
+  matrix.loadSequence(LEDMATRIX_ANIMATION_HEARTBEAT);
+  matrix.begin();
+  matrix.play(true);
+
+
   Serial.print("GiveActuatorInfo");
 
 }
 
 void loop() {
+
   receiveSerialData();
   if (newData == true)
   {

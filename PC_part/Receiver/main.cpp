@@ -48,15 +48,14 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& myDB);
 int main()
 {
     SerialCommunicator my_serial("/dev/ttyACM0",9600);
-    DBManager myDB("../test.db");
-    DBManager myActuator("../ActuatorEvents.db", true);
+    DBManager mDBManager("../SensorData.db", "../ActuatorEvents.db");
 
 
     if (!my_serial.isConnected())
     {
         return -1;
     }
-    std::thread readerTread(serialReaderThread, std::ref(my_serial), std::ref(myDB));
+    std::thread readerTread(serialReaderThread, std::ref(my_serial), std::ref(mDBManager));
     std::cout << "Serial reader thread started." << std::endl;
     std::cout << "Enter the commands" << std::endl;
     std::string command;
@@ -72,7 +71,7 @@ int main()
         else if (command == "Make_action")
         {
             int input_index = -1;
-            for (std::vector<ActuatorStruct> ActuatorList = myActuator.listActuators(); const auto& [ActuatorID, ActuatorName, State] : ActuatorList)
+            for (std::vector<ActuatorStruct> ActuatorList = mDBManager.actuatorManager().listActuators(); const auto& [ActuatorID, ActuatorName, State] : ActuatorList)
             {
                 std::cout << "| ID: " << ActuatorID;
                 std::cout << " | Name: " << ActuatorName;
@@ -90,7 +89,7 @@ int main()
             }else
             {
                 std::cout << "You want to ON/OFF ?" << std::endl;
-                std::string ActuatorName = myActuator.getActuatorName(input_index);
+                std::string ActuatorName = mDBManager.actuatorManager().getActuatorName(input_index);
                 if (ActuatorName.empty())
                 {
                     std::cerr << "ERR: Actuator with ID " << input_index << " not found." << std::endl;
@@ -116,11 +115,11 @@ int main()
 
                         if (newState != -1)
                         {
-                            if (myActuator.UpdateActuatorState(input_index, newState))
+                            if (mDBManager.actuatorManager().UpdateActuatorState(input_index, newState))
                             {
                                 std::string commandToSend = ActuatorName + commandSuffix;
                                 my_serial.writeLine(commandToSend);
-                                myActuator.addEvent(ActuatorName, newState);
+                                mDBManager.actuatorManager().addEvent(ActuatorName, newState);
                                 std::cout << "Command sent: " << commandToSend << std::endl;
                             }
                         }else
@@ -137,11 +136,14 @@ int main()
 
         }else if (command == "Check_DB")
         {
-            records = myDB.getLastNReadings(10);
+            records = mDBManager.sensorManager().getLastNReadings(10);
             std::cout << "All data: " << std::endl;
-            for (SensorDataStruct& record : records)
+            for (auto& [timestamp, temperature, humidity] : records)
             {
-                std::cout << record.timestamp << " " << record.temperature << " " << record.humidity << std::endl;
+                tm* gmt_time_info = gmtime(&timestamp);
+                char buffer[80];
+                strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S UTC", gmt_time_info);
+                std::cout << buffer << " | Temperature:  " << temperature << " | Humidity: " << humidity << std::endl;
             }
         }else if (command == "Add_actuator"){
             std::cout << "Write Name of new actuator." << std::endl;
@@ -149,7 +151,7 @@ int main()
             std::getline(std::cin, actuator);
             std::ranges::replace(actuator,' ', '_');
             std::ranges::transform(actuator, actuator.begin(), ::toupper);
-            myActuator.addActuator(actuator);
+            mDBManager.actuatorManager().addActuator(actuator);
         }else if (command == "Delete_Actuator")
         {
             std::cout << "Write name of actuator you want to delete." << std::endl;
@@ -157,7 +159,7 @@ int main()
             std::getline(std::cin, actuator);
             std::ranges::replace(actuator, ' ', '_');
             std::ranges::transform(actuator, actuator.begin(), ::toupper);
-            myActuator.deleteActuator(actuator);
+            mDBManager.actuatorManager().deleteActuator(actuator);
         }else if (command == "Check_last_actuator_events")
         {
             int n = 10;
@@ -165,10 +167,13 @@ int main()
             actuator_events.reserve(n);
             std::cout << "How long log you want?" << std::endl;
             std::cin >> n;
-            actuator_events = myActuator.getActuatorsData(n);
+            actuator_events = mDBManager.actuatorManager().getActuatorsData(n);
             for (const auto& [ActuatorID, State, ActuatorName, timestamp] : actuator_events)
             {
-                std::cout << "| ID: " << ActuatorID << " | Name: " << ActuatorName << " | State: " << State << " | Time: " << timestamp << std::endl;
+                tm* gmt_time_info = gmtime(&timestamp);
+                char buffer[80];
+                strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S UTC", gmt_time_info);
+                std::cout << "| ID: " << ActuatorID << " | Name: " << ActuatorName << " | State: " << State << " | Time: " << buffer << std::endl;
             }
         }
         else if (command == "History")
@@ -198,7 +203,14 @@ int main()
                 } else
                 {
                     std::cout << from_time << " " << to_time << std::endl;
-                    records = myDB.getReadingsInTimeRange( from_time, to_time);
+                    records = mDBManager.sensorManager().getReadingsInTimeRange( from_time, to_time);
+                    for (auto& [timestamp, temperature, humidity] : records)
+                    {
+                        struct ::tm* gmt_time_info = gmtime(&timestamp);
+                        char TimeBuffer[80];
+                        strftime(TimeBuffer, sizeof(TimeBuffer), "%Y-%m-%d %H:%M:%S UTC", gmt_time_info);
+                        std::cout << TimeBuffer << " | Temperature: " <<  temperature << " | Humidity: "<< humidity << std::endl;
+                    }
                 }
             }
         }else if (command == "Help")
