@@ -6,6 +6,7 @@
 #include <thread>
 #include "DatabaseManager.h"
 #include <atomic>
+#include <cmath>
 
 SerialCommunicator::SerialCommunicator(const std::string& port, uint32_t baudrate) {
     try {
@@ -61,6 +62,8 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
                 }
             }else
             {
+
+
                 size_t temp_start_pos = line.find("T:") + 2;
                 size_t temp_end_pos = line.find(';');
                 std::string temp = line.substr(temp_start_pos, temp_end_pos - temp_start_pos);
@@ -72,12 +75,28 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
 
                 try
                 {
-                    float temperature = std::stof(temp);
-                    float humidity = std::stof(hum);
+
+                    // std::cout << "--- Analyzing string 'temp' ---" << std::endl;
+                    // std::cout << "Raw string: [" << temp << "]" << std::endl;
+                    // for (char c : temp) {
+                    //     std::cout << "Char: '" << c << "', ASCII code: " << static_cast<int>(c) << std::endl;
+                    // }
+                    // std::cout << "--- End of analysis for 'temp' ---\n" << std::endl;
+                    //
+                    // // Повторіть те саме для 'hum'
+                    // std::cout << "--- Analyzing string 'hum' ---" << std::endl;
+                    // std::cout << "Raw string: [" << hum << "]" << std::endl;
+                    // for (char c : hum) {
+                    //     std::cout << "Char: '" << c << "', ASCII code: " << static_cast<int>(c) << std::endl;
+                    // }
+                    // std::cout << "--- End of analysis for 'hum' ---\n" << std::endl;
+
+                    double temperature = std::stod(temp);
+                    double humidity = std::stod(hum);
 
 
-                    if (DB.sensorManager().insertData(temperature, humidity))
-                    {
+
+                    if (DB.sensorManager().insertData(temperature, humidity))                  {
                         // std::cout<< "success" << std::endl;
                     }else
                     {

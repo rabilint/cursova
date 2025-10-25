@@ -26,7 +26,7 @@ class SensorDataManager
     SensorDataManager(const SensorDataManager&) = delete;
     SensorDataManager& operator=(const SensorDataManager&) = delete;
 
-    bool insertData(float temperature, float humidity);
+    bool insertData(double temperature, double humidity);
     std::vector<SensorDataStruct> getLastNReadings(int n);
     std::vector<SensorDataStruct> getReadingsInTimeRange(time_t start_from, time_t endWhen);
 

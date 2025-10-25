@@ -4,6 +4,8 @@
 
 #include "SensorDataManager.h"
 
+#include <cmath>
+
 SensorDataManager::SensorDataManager(const std::string& fileName)
 {
 
@@ -41,7 +43,7 @@ void SensorDataManager::createTables()
 
 
 
-bool SensorDataManager::insertData(float temperature, float humidity)
+bool SensorDataManager::insertData(double temperature, double humidity)
 {
     if (!db_handle) {
         std::cerr << "Database handle is null. Cannot insert data." << std::endl;
