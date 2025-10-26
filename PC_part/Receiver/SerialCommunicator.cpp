@@ -50,62 +50,54 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
         std::string line = serial.readLine();
         if (!line.empty())
         {
-            if (line == "GiveActuatorInfo") //Ось тут частина де відправляються дані на ардуїно
+            if (line == "GiveActuatorInfo\n") //Ось тут частина де відправляються дані на ардуїно
             {
-
+                std::cout  << "In Get line section: "<< line << std::endl;
                 std::vector<ActuatorStruct> actuators;
                 actuators = DB.actuatorManager().listActuators(); //Отримуємо vector.
                 serial.writeLine("Take: *" + std::to_string(actuators.size()) + "*");
+                std::cout << "Take: *" << std::to_string(actuators.size()) + "*" << std::endl;
                 for (const ActuatorStruct& actuator : actuators)
                 {
                     serial.writeLine("Take: #"  + actuator.ActuatorName + " " + std::to_string(actuator.State) + "#");
+                    std::cout << "Take: #"  + actuator.ActuatorName + " " + std::to_string(actuator.State) + "#" << std::endl;
                 }
             }else
             {
 
+                std::cout << "In command section: " <<  line << std::endl;
 
-                size_t temp_start_pos = line.find("T:") + 2;
-                size_t temp_end_pos = line.find(';');
-                std::string temp = line.substr(temp_start_pos, temp_end_pos - temp_start_pos);
-
-                size_t hum_start_pos = line.find("H:") + 2;
-                size_t hum_end_pos = line.find(';');
-                std::string hum = line.substr(hum_start_pos, hum_end_pos - temp_start_pos);
-
-
-                try
-                {
-
-                    // std::cout << "--- Analyzing string 'temp' ---" << std::endl;
-                    // std::cout << "Raw string: [" << temp << "]" << std::endl;
-                    // for (char c : temp) {
-                    //     std::cout << "Char: '" << c << "', ASCII code: " << static_cast<int>(c) << std::endl;
-                    // }
-                    // std::cout << "--- End of analysis for 'temp' ---\n" << std::endl;
-                    //
-                    // // Повторіть те саме для 'hum'
-                    // std::cout << "--- Analyzing string 'hum' ---" << std::endl;
-                    // std::cout << "Raw string: [" << hum << "]" << std::endl;
-                    // for (char c : hum) {
-                    //     std::cout << "Char: '" << c << "', ASCII code: " << static_cast<int>(c) << std::endl;
-                    // }
-                    // std::cout << "--- End of analysis for 'hum' ---\n" << std::endl;
-
-                    double temperature = std::stod(temp);
-                    double humidity = std::stod(hum);
+                // size_t temp_start_pos = line.find("T:") + 2;
+                // size_t temp_end_pos = line.find(';');
+                // std::string temp = line.substr(temp_start_pos, temp_end_pos - temp_start_pos);
+                //
+                // size_t hum_start_pos = line.find("H:") + 2;
+                // size_t hum_end_pos = line.find(';');
+                // std::string hum = line.substr(hum_start_pos, hum_end_pos - temp_start_pos);
 
 
+                // try
+                // {
 
-                    if (DB.sensorManager().insertData(temperature, humidity))                  {
-                        // std::cout<< "success" << std::endl;
-                    }else
-                    {
-                        std::cout<< "failed to insert data" << std::endl;
-                    }
-                }catch (const std::exception& e)
-                {
-                    std::cerr << "Error in inserting data: " << e.what() << std::endl;
-                }
+
+                //     double temperature = std::stod(temp);
+                //     double humidity = std::stod(hum);
+                //
+                //
+                //
+                //     if (DB.sensorManager().insertData(temperature, humidity))                  {
+                //         // std::cout<< "success" << std::endl;
+                //     }else
+                //     {
+                //         std::cout<< "failed to insert data" << std::endl;
+                //     }
+                // }catch (const std::exception& e)
+                // {
+                //     std::cout << temp << "; " << hum << std::endl;
+                //     std::cout << line << std::endl;
+                //
+                //     std::cerr << "Error in inserting data: " << e.what() << std::endl;
+                // }
             }
         }
     }

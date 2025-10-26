@@ -22,7 +22,7 @@ Adafruit_BME680 bme(BME_CS, BME_MOSI, BME_MISO, BME_SCK);
 
 constexpr int yellowLedPin = 2;
 constexpr int redLedPin = 4;
-constexpr int greenLedPin = 8;
+// constexpr int greenLedPin = 8;
 
 struct ActuatorStruct
 {
@@ -71,78 +71,74 @@ void receiveSerialData()
   }
 }
 
-void handleInitialStatus()
-{
+void handleInitialStatus() {
   String line = String(receivedChars);
-  if (!line.startsWith("Take: "))
-  {
-    return;
-  }
-  if (currentState == HandshakeState::WAITING_FOR_SIZE)
-  {
+  if (!line.startsWith("Take: ")) return;
+
+  if (currentState == HandshakeState::WAITING_FOR_SIZE) {
+    Serial.print("HANDSHAKE: Processing size... | ");
     int startPos = line.indexOf('*');
     int endPos = line.lastIndexOf('*');
-    if (startPos != -1 && endPos > startPos )
-    {
-      String size = line.substring(startPos + 1, endPos);
-      int numActuators = size.toInt();
-      if (numActuators > 0)
-      {
+
+    if (startPos != -1 && endPos > startPos) {
+      String sizeStr = line.substring(startPos + 1, endPos);
+
+      // ВИПРАВЛЕНО: Прибираємо 'int', щоб записати в глобальну змінну
+      numActuators = sizeStr.toInt();
+      Serial.print("HANDSHAKE: Expecting " + String(numActuators) + " actuators. | ");
+
+      if (numActuators > 0) {
         actuatorsArray = new ActuatorStruct[numActuators];
         currentState = HandshakeState::WAITING_FOR_DATA;
-      }else
-      {
+      } else {
         currentState = HandshakeState::COMPLETE;
       }
     }
   }
-
-  if (currentState == HandshakeState::WAITING_FOR_DATA)
-  {
+  else if (currentState == HandshakeState::WAITING_FOR_DATA) {
     int startPos = line.indexOf('#');
     int endPos = line.lastIndexOf('#');
-    if (startPos != -1 && endPos > startPos )
-    {
+
+    if (startPos != -1 && endPos > startPos) {
       String data = line.substring(startPos + 1, endPos);
       int spaceIndex = data.indexOf(' ');
-      if (spaceIndex != -1 && spaceIndex < numActuators)
-      {
+
+      if (spaceIndex != -1) {
         String name = data.substring(0, spaceIndex);
         bool state = data.substring(spaceIndex + 1).toInt() == 1;
+
         actuatorsArray[actuatorsReceived].name = name;
         actuatorsArray[actuatorsReceived].State = state;
 
         if (name.equalsIgnoreCase("LED_RED")) {
           actuatorsArray[actuatorsReceived].pin = redLedPin;
-        } else if (name.equalsIgnoreCase("LED_GREEN")) {
-          actuatorsArray[actuatorsReceived].pin = greenLedPin;
         }
 
+        Serial.print("HANDSHAKE: Received actuator " + String(actuatorsReceived + 1) + "/" + String(numActuators) + ": " + name + " | ");
         actuatorsReceived++;
       }
     }
 
-    if (actuatorsReceived >= numActuators)
-    {
-      for (int i = 0; i < numActuators; i++)
-      {
+    if (actuatorsReceived >= numActuators) {
+      Serial.print("HANDSHAKE: Complete. Setting initial states. | ");
+      for (int i = 0; i < numActuators; i++) {
         digitalWrite(actuatorsArray[i].pin, actuatorsArray[i].State ? HIGH : LOW);
-
       }
       currentState = HandshakeState::COMPLETE;
     }
   }
-
 }
 
 void processCommand(  )
 {
   String command = String(receivedChars);
-
+  Serial.print("This command ! : "+command + " " + numActuators);
+  // digitalWrite(redLedPin, HIGH);
   for (int i = 0; i < numActuators; i++)
   {
     if (command.equalsIgnoreCase(actuatorsArray[i].name + "_ON"))
     {
+      digitalWrite(4,HIGH);
       digitalWrite(actuatorsArray[i].pin, HIGH);
       actuatorsArray[i].State = true;
       break;
@@ -158,14 +154,17 @@ void processCommand(  )
 
 ArduinoLEDMatrix matrix;
 
+unsigned long lastRequestTime = 0;
+constexpr long requestInterval = 2000;
+
 void setup() {
 
   //Adafruit Sensor BME680
 
-  Serial.println(F("BME680 async test"));
+  Serial.print(F("BME680 async test"));
 
   if (!bme.begin()) {
-    Serial.println(F("Could not find a valid BME680 sensor, check wiring!"));
+    Serial.print(F("Could not find a valid BME680 sensor, check wiring!"));
     for (;;);
   }
 
@@ -184,14 +183,15 @@ void setup() {
   RTC.setTime(startTime);
   pinMode(yellowLedPin, OUTPUT);
   pinMode(redLedPin, OUTPUT);
-  pinMode(greenLedPin, OUTPUT);
+  // pinMode(greenLedPin, OUTPUT);
 
   matrix.loadSequence(LEDMATRIX_ANIMATION_HEARTBEAT);
   matrix.begin();
   matrix.play(true);
 
 
-  Serial.print("GiveActuatorInfo");
+  Serial.print("GiveActuatorInfo\n");
+  lastRequestTime = millis();
 
 }
 
@@ -200,60 +200,100 @@ constexpr long interval = 5000;
 
 void loop()
 {
-  unsigned long endTime = millis();
-  if (endTime == 0)
-  {
-    Serial.println(F("Failed to begin readings: ( "));
-    return;
-  }
-
-  // Serial.print(F("Reading completed at "));
-  // Serial.println(millis());
-  //
-  // Serial.print(F("Temperature = "));
-  // Serial.print(bme.temperature);
-  // Serial.println(F(" *C"));
-  //
-  // Serial.print(F("Pressure = "));
-  // Serial.print(bme.pressure / 100.0);
-  // Serial.println(F(" hPa"));
-  //
-  // Serial.print(F("Humidity = "));
-  // Serial.print(bme.humidity);
-  // Serial.println(F(" %"));
-  //
-  // Serial.print(F("Gas = "));
-  // Serial.print(bme.gas_resistance / 1000.0);
-  // Serial.println(F(" KOhms"));
-  //
-  // Serial.print(F("Approx. Altitude = "));
-
-  bme.readAltitude(SEALEVELPRESSURE_HPA);
-
-
-  unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= interval)
-  {
-    Serial.print("T:");
-    Serial.print(bme.temperature);
-    Serial.print(";H:");
-    Serial.print(bme.humidity);
-  }
-
   receiveSerialData();
-  if (newData == true)
+  if (newData)
   {
-    if (currentState == HandshakeState::COMPLETE)
+    if (currentState != HandshakeState::COMPLETE)
     {
-      // Serial.println("New data received");
-      // Serial.println(receivedChars);
-      processCommand();
+      // Serial.print("\n");
+      handleInitialStatus();
     }else
     {
-      handleInitialStatus();
+      // Serial.print("New data received");
+      // Serial.print(receivedChars);
+      processCommand();
     }
     newData = false;
   }
-  delay(5000);
-};
 
+  if (currentState != HandshakeState::COMPLETE) //повторний запит у випадку якщо не вийшло отримати дані actuator-ів з першої спроби.
+  {
+    unsigned long currentTime = millis();
+    if (currentTime - lastRequestTime >= requestInterval)
+    {
+      // Serial.print("No response, requesting info again...");
+      Serial.print("GiveActuatorInfo\n");
+      lastRequestTime = currentTime;
+    }
+  }
+
+  if (currentState == HandshakeState::COMPLETE)
+  {
+    bme.readAltitude(SEALEVELPRESSURE_HPA);
+    unsigned long currentTime = millis();
+    if (currentTime - lastSensorReadTime >= sensorReadInterval) {
+      lastSensorReadTime = currentTime;
+      Serial.print("T:");
+      Serial.print(bme.temperature);
+      Serial.print(";H:");
+      Serial.print(bme.humidity);
+      Serial.print("\n");
+    };
+  }
+
+  // unsigned long endTime = millis();
+  // if (endTime == 0)
+  // {
+  //   Serial.println(F("Failed to begin readings: ( "));
+  //   return;
+  // }
+  //
+  // // Serial.print(F("Reading completed at "));
+  // // Serial.println(millis());
+  // //
+  // // Serial.print(F("Temperature = "));
+  // // Serial.print(bme.temperature);
+  // // Serial.println(F(" *C"));
+  // //
+  // // Serial.print(F("Pressure = "));
+  // // Serial.print(bme.pressure / 100.0);
+  // // Serial.println(F(" hPa"));
+  // //
+  // // Serial.print(F("Humidity = "));
+  // // Serial.print(bme.humidity);
+  // // Serial.println(F(" %"));
+  // //
+  // // Serial.print(F("Gas = "));
+  // // Serial.print(bme.gas_resistance / 1000.0);
+  // // Serial.println(F(" KOhms"));
+  // //
+  // // Serial.print(F("Approx. Altitude = "));
+  //
+  //
+  //
+  //
+  // unsigned long currentMillis = millis();
+  // if (currentMillis - previousMillis >= interval)
+  // {
+  //   Serial.print("T:");
+  //   Serial.print(bme.temperature);
+  //   Serial.print(";H:");
+  //   Serial.print(bme.humidity);
+  // }
+  //
+  // receiveSerialData();
+  // if (newData == true)
+  // {
+  //   if (currentState == HandshakeState::COMPLETE)
+  //   {
+  //     // Serial.println("New data received");
+  //     // Serial.println(receivedChars);
+  //     processCommand();
+  //   }else
+  //   {
+  //     handleInitialStatus();
+  //   }
+  //   newData = false;
+  // }
+  // delay(5000);
+};
