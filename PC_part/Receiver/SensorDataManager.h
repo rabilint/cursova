@@ -26,14 +26,16 @@ class SensorDataManager
     SensorDataManager(const SensorDataManager&) = delete;
     SensorDataManager& operator=(const SensorDataManager&) = delete;
 
-    bool insertData(double temperature, double humidity);
+    bool insertData(int sensorID, double Data);
     std::vector<SensorDataStruct> getLastNReadings(int n);
     std::vector<SensorDataStruct> getReadingsInTimeRange(time_t start_from, time_t endWhen);
+    bool setBasicSensors();
 
     private:
     sqlite3* db_handle{};
     std::mutex db_mutex;
     void createTables();
+
 
 };
 

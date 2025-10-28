@@ -3,6 +3,7 @@
 #include "Arduino_LED_Matrix.h"
 #include <Wire.h>
 #include <SPI.h>
+#include <Servo.h>
 #include "/home/rabilint/CLionProjects/cursova/Arduino/lib/Adafruit_Sensor-master/Adafruit_Sensor.h"
 #include "/home/rabilint/CLionProjects/cursova/Arduino/lib/Adafruit_BME680-master/Adafruit_BME680.h"
 
@@ -29,7 +30,41 @@ struct ActuatorStruct
   String name{};
   int pin{};
   int State{};
+
+  //functoins to turn on and off
+  void (*on_func) (int){};
+  void (*off_func) (int){};
+
 };
+
+Servo servo;
+
+void turnOnServo(const int pin){
+  if (!servo.attached())
+  {
+    servo.attach(pin);
+  }
+  servo.write(90);
+}
+
+void turnOffServo(const int pin)
+{
+  if (!servo.attached())
+  {
+    servo.attach(pin);
+  }
+  servo.write(0);
+}
+
+void turnOnLED(const int pin)
+{
+digitalWrite(pin, HIGH);
+}
+
+void turnOffLED(const int pin)
+{
+  digitalWrite(pin, LOW);
+}
 
 ActuatorStruct* actuatorsArray = nullptr;
 int numActuators = 0;
@@ -71,21 +106,20 @@ void receiveSerialData()
   }
 }
 
-void handleInitialStatus() {
+void handleInitialStatus() { //TODO: додати обробку на вхід ID.sensor та Name.sensor. Перекинути handleInitialStatus в інший файл.
   String line = String(receivedChars);
   if (!line.startsWith("Take: ")) return;
 
   if (currentState == HandshakeState::WAITING_FOR_SIZE) {
-    Serial.print("HANDSHAKE: Processing size... | ");
+    // Serial.print("HANDSHAKE: Processing size... | ");
     int startPos = line.indexOf('*');
     int endPos = line.lastIndexOf('*');
 
     if (startPos != -1 && endPos > startPos) {
       String sizeStr = line.substring(startPos + 1, endPos);
 
-      // ВИПРАВЛЕНО: Прибираємо 'int', щоб записати в глобальну змінну
       numActuators = sizeStr.toInt();
-      Serial.print("HANDSHAKE: Expecting " + String(numActuators) + " actuators. | ");
+      // Serial.print("HANDSHAKE: Expecting " + String(numActuators) + " actuators. | ");
 
       if (numActuators > 0) {
         actuatorsArray = new ActuatorStruct[numActuators];
@@ -112,18 +146,30 @@ void handleInitialStatus() {
 
         if (name.equalsIgnoreCase("LED_RED")) {
           actuatorsArray[actuatorsReceived].pin = redLedPin;
+          actuatorsArray[actuatorsReceived].on_func = turnOnLED;
+          actuatorsArray[actuatorsReceived].off_func = turnOffLED;
+        }
+        if (name.equalsIgnoreCase("SERVO"))
+        {
+          actuatorsArray[actuatorsReceived].pin = 8;
+          servo.attach(actuatorsArray[actuatorsReceived].pin);
+          actuatorsArray[actuatorsReceived].on_func = turnOnServo;
+          actuatorsArray[actuatorsReceived].off_func = turnOffServo;
+
         }
 
-        Serial.print("HANDSHAKE: Received actuator " + String(actuatorsReceived + 1) + "/" + String(numActuators) + ": " + name + " | ");
+        // Serial.print("HANDSHAKE: Received actuator " + String(actuatorsReceived + 1) + "/" + String(numActuators) + ": " + name + " | ");
         actuatorsReceived++;
       }
     }
 
     if (actuatorsReceived >= numActuators) {
-      Serial.print("HANDSHAKE: Complete. Setting initial states. | ");
+      // Serial.print("HANDSHAKE: Complete. Setting initial states. | ");
       for (int i = 0; i < numActuators; i++) {
-        digitalWrite(actuatorsArray[i].pin, actuatorsArray[i].State ? HIGH : LOW);
-      }
+        actuatorsArray[i].State ? actuatorsArray->on_func(actuatorsArray[i].pin) : actuatorsArray->off_func(actuatorsArray[i].pin);
+        // виконуємо вмикання або вимикання actuator-a за допомогою вбудованої функції
+        // актуатор[і].Стан ? так ->  функція_ввімкнення(актуатор[i].пін) : ні -> функція_вимкнення(актуатор[i].пін)
+        }
       currentState = HandshakeState::COMPLETE;
     }
   }
@@ -132,20 +178,18 @@ void handleInitialStatus() {
 void processCommand(  )
 {
   String command = String(receivedChars);
-  Serial.print("This command ! : "+command + " " + numActuators);
-  // digitalWrite(redLedPin, HIGH);
+  // Serial.print("This command ! : "+command + " " + numActuators); //отладка
   for (int i = 0; i < numActuators; i++)
   {
     if (command.equalsIgnoreCase(actuatorsArray[i].name + "_ON"))
     {
-      digitalWrite(4,HIGH);
-      digitalWrite(actuatorsArray[i].pin, HIGH);
+      actuatorsArray[i].on_func(actuatorsArray[i].pin);
       actuatorsArray[i].State = true;
       break;
     }
     if (command.equalsIgnoreCase(actuatorsArray[i].name + "_OFF"))
     {
-      digitalWrite(actuatorsArray[i].pin, LOW);
+      actuatorsArray[i].off_func(actuatorsArray[i].pin);
       actuatorsArray[i].State = false;
       break;
     }
@@ -158,7 +202,8 @@ unsigned long lastRequestTime = 0;
 constexpr long requestInterval = 2000;
 
 void setup() {
-
+  servo.attach(8);
+  servo.write(270);
   //Adafruit Sensor BME680
 
   Serial.print(F("BME680 async test"));
@@ -268,32 +313,5 @@ void loop()
   // // Serial.println(F(" KOhms"));
   // //
   // // Serial.print(F("Approx. Altitude = "));
-  //
-  //
-  //
-  //
-  // unsigned long currentMillis = millis();
-  // if (currentMillis - previousMillis >= interval)
-  // {
-  //   Serial.print("T:");
-  //   Serial.print(bme.temperature);
-  //   Serial.print(";H:");
-  //   Serial.print(bme.humidity);
-  // }
-  //
-  // receiveSerialData();
-  // if (newData == true)
-  // {
-  //   if (currentState == HandshakeState::COMPLETE)
-  //   {
-  //     // Serial.println("New data received");
-  //     // Serial.println(receivedChars);
-  //     processCommand();
-  //   }else
-  //   {
-  //     handleInitialStatus();
-  //   }
-  //   newData = false;
-  // }
-  // delay(5000);
+
 };

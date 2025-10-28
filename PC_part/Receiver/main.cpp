@@ -49,7 +49,10 @@ int main()
 {
     SerialCommunicator my_serial("/dev/ttyACM0",9600);
     DBManager mDBManager("../SensorData.db", "../ActuatorEvents.db");
-
+    if (!mDBManager.sensorManager().setBasicSensors())
+    {
+        std::cerr << "ERR: Failed to set basic sensors." << std::endl;
+    }
 
     if (!my_serial.isConnected())
     {

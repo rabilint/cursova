@@ -52,7 +52,7 @@
         </library>
       </libraries>
     </data-source>
-    <data-source source="LOCAL" name="SensorDataDB" uuid="1ec53d34-3813-416b-90c0-7558835e8bbf">
+    <data-source source="LOCAL" name="SensorData" uuid="9a4f462d-603d-41ba-ad43-c66e27845a78">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>

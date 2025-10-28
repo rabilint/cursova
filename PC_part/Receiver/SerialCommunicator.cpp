@@ -52,52 +52,52 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
         {
             if (line == "GiveActuatorInfo\n") //Ось тут частина де відправляються дані на ардуїно
             {
+                //TODO: Додати відправку sensor-ів та їхніх ID врахувати, що сенсор може називатись temperature2 etc.
                 std::cout  << "In Get line section: "<< line << std::endl;
                 std::vector<ActuatorStruct> actuators;
                 actuators = DB.actuatorManager().listActuators(); //Отримуємо vector.
                 serial.writeLine("Take: *" + std::to_string(actuators.size()) + "*");
-                std::cout << "Take: *" << std::to_string(actuators.size()) + "*" << std::endl;
+                //std::cout << "Take: *" << std::to_string(actuators.size()) + "*" << std::endl;
                 for (const ActuatorStruct& actuator : actuators)
                 {
                     serial.writeLine("Take: #"  + actuator.ActuatorName + " " + std::to_string(actuator.State) + "#");
-                    std::cout << "Take: #"  + actuator.ActuatorName + " " + std::to_string(actuator.State) + "#" << std::endl;
+                    //std::cout << "Take: #"  + actuator.ActuatorName + " " + std::to_string(actuator.State) + "#" << std::endl;
                 }
             }else
             {
 
-                std::cout << "In command section: " <<  line << std::endl;
 
-                // size_t temp_start_pos = line.find("T:") + 2;
-                // size_t temp_end_pos = line.find(';');
-                // std::string temp = line.substr(temp_start_pos, temp_end_pos - temp_start_pos);
-                //
-                // size_t hum_start_pos = line.find("H:") + 2;
-                // size_t hum_end_pos = line.find(';');
-                // std::string hum = line.substr(hum_start_pos, hum_end_pos - temp_start_pos);
+                size_t temp_start_pos = line.find("T:") + 2;
+                size_t temp_end_pos = line.find(';');
+                std::string temp = line.substr(temp_start_pos, temp_end_pos - temp_start_pos);
+
+                size_t hum_start_pos = line.find("H:") + 2;
+                size_t hum_end_pos = line.find(';');
+                std::string hum = line.substr(hum_start_pos, hum_end_pos - temp_start_pos);
+                //TODO: минулий формат: #T:DATA;H:DATA;#  #T:DATA;H:DATA;# замінити на #SensorID(1):DATA# #SensorID(2): DATA#
+
+                try
+                {
 
 
-                // try
-                // {
+                    double temperature = std::stod(temp);
+                    double humidity = std::stod(hum);
 
 
-                //     double temperature = std::stod(temp);
-                //     double humidity = std::stod(hum);
-                //
-                //
-                //
-                //     if (DB.sensorManager().insertData(temperature, humidity))                  {
-                //         // std::cout<< "success" << std::endl;
-                //     }else
-                //     {
-                //         std::cout<< "failed to insert data" << std::endl;
-                //     }
-                // }catch (const std::exception& e)
-                // {
-                //     std::cout << temp << "; " << hum << std::endl;
-                //     std::cout << line << std::endl;
-                //
-                //     std::cerr << "Error in inserting data: " << e.what() << std::endl;
-                // }
+
+                    if (DB.sensorManager().insertData(temperature, humidity))                  {
+                        // std::cout<< "success" << std::endl;
+                    }else
+                    {
+                        std::cout<< "failed to insert data" << std::endl;
+                    }
+                }catch (const std::exception& e)
+                {
+                    std::cout << temp << "; " << hum << std::endl;
+                    std::cout << line << std::endl;
+
+                    std::cerr << "Error in inserting data: " << e.what() << std::endl;
+                }
             }
         }
     }

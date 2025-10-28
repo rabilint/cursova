@@ -3,7 +3,7 @@
 //
 
 #include "SensorDataManager.h"
-
+#include <array>
 #include <cmath>
 
 SensorDataManager::SensorDataManager(const std::string& fileName)
@@ -31,7 +31,7 @@ void SensorDataManager::createTables()
 {
     std::lock_guard<std::mutex> lock(db_mutex);
 
-    const char* sql = "CREATE TABLE IF NOT EXISTS SensorReadings (ReadingID INTEGER PRIMARY KEY AUTOINCREMENT, Timestamp INTEGER NOT NULL, Temperature REAL NOT NULL, Humidity REAL NOT NULL); ";
+    const char* sql = "CREATE TABLE IF NOT EXISTS SensorsID (SensorID INTEGER PRIMARY KEY AUTOINCREMENT, SensorName TEXT NOT NULL UNIQUE )";
 
     char* errMsg = nullptr;
     if (sqlite3_exec(db_handle, sql, nullptr, nullptr, &errMsg) != SQLITE_OK)
@@ -39,11 +39,15 @@ void SensorDataManager::createTables()
         std::cerr << "SQL error: " << errMsg << std::endl;
         sqlite3_free(errMsg);
     }
+    const char* sql2 = "CREATE TABLE IF NOT EXISTS SensorData (ReadingID INTEGER PRIMARY KEY AUTOINCREMENT, Timestamp INTEGER NOT NULL ,SensorID INTEGER NOT NULL,  Data REAL NOT NULL, FOREIGN KEY(SensorID) REFERENCES SensorsID(SensorID))";
+    if (sqlite3_exec(db_handle, sql2, nullptr, nullptr, &errMsg) != SQLITE_OK)
+    {
+        std::cerr << "SQL error: " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+    }
 }
 
-
-
-bool SensorDataManager::insertData(double temperature, double humidity)
+bool SensorDataManager::setBasicSensors()
 {
     if (!db_handle) {
         std::cerr << "Database handle is null. Cannot insert data." << std::endl;
@@ -52,7 +56,70 @@ bool SensorDataManager::insertData(double temperature, double humidity)
 
     std::lock_guard<std::mutex> lock(db_mutex);
 
-    const char* sql = "INSERT INTO SensorReadings (Timestamp, Temperature, Humidity) VALUES (?,?,?)";
+
+    //sensors
+    std::array<const char*, 4> sensorNames = {
+        "Temperature","Humidity","Gas", "Pressure"
+    };
+    char* errMsg = nullptr;
+
+    if (sqlite3_exec(db_handle,"BEGIN TRANSACTION;", nullptr, nullptr, &errMsg) != SQLITE_OK)
+    {
+        std::cerr << "Begin transaction failed: " << sqlite3_errmsg(db_handle) << std::endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+
+    const char* sql = "INSERT OR IGNORE INTO SensorsID (SensorName) VALUES (?)";
+    sqlite3_stmt* stmt = nullptr;
+
+    if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr)!= SQLITE_OK)
+    {
+        std::cerr << "Failed to prepare: " << sqlite3_errmsg(db_handle) << std::endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+
+    bool success = true;
+
+    for (const char* name : sensorNames)
+    {
+        sqlite3_bind_text(stmt, 1, name, -1, SQLITE_STATIC);
+
+        if (sqlite3_step(stmt) != SQLITE_DONE)
+        {
+            std::cerr << "Failed to insert sensor: " << sqlite3_errmsg(db_handle) << std::endl;
+            success = false;
+            break;
+        }
+        sqlite3_reset(stmt);
+    }
+
+    sqlite3_finalize(stmt);
+    const char* final_sql = success ? "COMMIT" : "ROLLBACK";
+
+    if (sqlite3_exec(db_handle, final_sql, nullptr, nullptr, &errMsg) != SQLITE_OK)
+    {
+        std::cerr << "Failed to " << (success ? "commit" : "rollback") << " transaction: " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+
+    return success;
+}
+
+
+
+bool SensorDataManager::insertData(int sensorID, double Data)
+{
+    if (!db_handle) {
+        std::cerr << "Database handle is null. Cannot insert data." << std::endl;
+        return false;
+    }
+
+    std::lock_guard<std::mutex> lock(db_mutex);
+
+    const char* sql = "INSERT INTO SensorReadings (Timestamp, SensorID, Data) VALUES (?,?,?)";
     sqlite3_stmt* stmt = nullptr;
 
     if (sqlite3_prepare_v2(db_handle, sql,-1, &stmt, nullptr)!= SQLITE_OK)
@@ -62,8 +129,8 @@ bool SensorDataManager::insertData(double temperature, double humidity)
     }
 
     sqlite3_bind_int64(stmt, 1, time(nullptr));
-    sqlite3_bind_double(stmt, 2, temperature);
-    sqlite3_bind_double(stmt, 3, humidity);
+    sqlite3_bind_int(stmt, 2, sensorID);
+    sqlite3_bind_double(stmt, 3, Data);
 
     bool success = true;
     if (sqlite3_step(stmt) != SQLITE_DONE)
