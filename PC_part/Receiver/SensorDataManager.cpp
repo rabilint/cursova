@@ -18,6 +18,11 @@ SensorDataManager::SensorDataManager(const std::string& fileName)
 
 }
 
+
+std::vector<const char*> sensorNames = {
+    "Temperature","Humidity","Gas", "Pressure"
+};
+
 SensorDataManager::~SensorDataManager()
 {
     if (db_handle)
@@ -27,27 +32,8 @@ SensorDataManager::~SensorDataManager()
 }
 
 
-void SensorDataManager::createTables()
-{
-    std::lock_guard<std::mutex> lock(db_mutex);
 
-    const char* sql = "CREATE TABLE IF NOT EXISTS SensorsID (SensorID INTEGER PRIMARY KEY AUTOINCREMENT, SensorName TEXT NOT NULL UNIQUE )";
-
-    char* errMsg = nullptr;
-    if (sqlite3_exec(db_handle, sql, nullptr, nullptr, &errMsg) != SQLITE_OK)
-    {
-        std::cerr << "SQL error: " << errMsg << std::endl;
-        sqlite3_free(errMsg);
-    }
-    const char* sql2 = "CREATE TABLE IF NOT EXISTS SensorData (ReadingID INTEGER PRIMARY KEY AUTOINCREMENT, Timestamp INTEGER NOT NULL ,SensorID INTEGER NOT NULL,  Data REAL NOT NULL, FOREIGN KEY(SensorID) REFERENCES SensorsID(SensorID))";
-    if (sqlite3_exec(db_handle, sql2, nullptr, nullptr, &errMsg) != SQLITE_OK)
-    {
-        std::cerr << "SQL error: " << errMsg << std::endl;
-        sqlite3_free(errMsg);
-    }
-}
-
-bool SensorDataManager::setBasicSensors()
+bool SensorDataManager::setBasicSensors(std::vector<const char*> sensorNames)
 {
     if (!db_handle) {
         std::cerr << "Database handle is null. Cannot insert data." << std::endl;
@@ -58,9 +44,7 @@ bool SensorDataManager::setBasicSensors()
 
 
     //sensors
-    std::array<const char*, 4> sensorNames = {
-        "Temperature","Humidity","Gas", "Pressure"
-    };
+
     char* errMsg = nullptr;
 
     if (sqlite3_exec(db_handle,"BEGIN TRANSACTION;", nullptr, nullptr, &errMsg) != SQLITE_OK)
@@ -107,6 +91,28 @@ bool SensorDataManager::setBasicSensors()
 
     return success;
 }
+
+void SensorDataManager::createTables()
+{
+    std::lock_guard<std::mutex> lock(db_mutex);
+
+    const char* sql = "CREATE TABLE IF NOT EXISTS SensorsID (SensorID INTEGER PRIMARY KEY AUTOINCREMENT, SensorName TEXT NOT NULL UNIQUE )";
+
+    char* errMsg = nullptr;
+    if (sqlite3_exec(db_handle, sql, nullptr, nullptr, &errMsg) != SQLITE_OK)
+    {
+        std::cerr << "SQL error: " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+    }
+
+    const char* sql2 = "CREATE TABLE IF NOT EXISTS SensorData (ReadingID INTEGER PRIMARY KEY AUTOINCREMENT, Timestamp INTEGER NOT NULL ,SensorID INTEGER NOT NULL,  Data REAL NOT NULL, FOREIGN KEY(SensorID) REFERENCES SensorsID(SensorID))";
+    if (sqlite3_exec(db_handle, sql2, nullptr, nullptr, &errMsg) != SQLITE_OK)
+    {
+        std::cerr << "SQL error: " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+    }
+}
+
 
 
 

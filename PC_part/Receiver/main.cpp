@@ -41,6 +41,10 @@ time_t parseUserInputTime(const char* buffer) {
     return mktime(&tm);
 }
 
+//sensors config
+
+//
+
 extern std::atomic<bool> running;
 std::vector<SensorDataStruct> records;
 void serialReaderThread(SerialCommunicator& serial, DBManager& myDB);
@@ -49,10 +53,9 @@ int main()
 {
     SerialCommunicator my_serial("/dev/ttyACM0",9600);
     DBManager mDBManager("../SensorData.db", "../ActuatorEvents.db");
-    if (!mDBManager.sensorManager().setBasicSensors())
-    {
-        std::cerr << "ERR: Failed to set basic sensors." << std::endl;
-    }
+
+
+
 
     if (!my_serial.isConnected())
     {

@@ -54,8 +54,10 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
             {
                 //TODO: Додати відправку sensor-ів та їхніх ID врахувати, що сенсор може називатись temperature2 etc.
                 std::cout  << "In Get line section: "<< line << std::endl;
-                std::vector<ActuatorStruct> actuators;
-                actuators = DB.actuatorManager().listActuators(); //Отримуємо vector.
+
+
+                std::vector<ActuatorStruct> actuators = DB.actuatorManager().listActuators(); //Отримуємо actuators vector.
+
                 serial.writeLine("Take: *" + std::to_string(actuators.size()) + "*");
                 //std::cout << "Take: *" << std::to_string(actuators.size()) + "*" << std::endl;
                 for (const ActuatorStruct& actuator : actuators)
@@ -66,26 +68,26 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
             }else
             {
 
+                //приймає sensor ID: Data;
+                size_t sensorData_start_pos = line.find(':');
+                size_t sensorData_end_pos = line.find(';');
 
-                size_t temp_start_pos = line.find("T:") + 2;
-                size_t temp_end_pos = line.find(';');
-                std::string temp = line.substr(temp_start_pos, temp_end_pos - temp_start_pos);
+                std::string sensorId = line.substr(0, sensorData_start_pos + 1);
+                std::string sensorData = line.substr(sensorData_start_pos, sensorData_end_pos - sensorData_start_pos);
+                //
 
-                size_t hum_start_pos = line.find("H:") + 2;
-                size_t hum_end_pos = line.find(';');
-                std::string hum = line.substr(hum_start_pos, hum_end_pos - temp_start_pos);
-                //TODO: минулий формат: #T:DATA;H:DATA;#  #T:DATA;H:DATA;# замінити на #SensorID(1):DATA# #SensorID(2): DATA#
+
 
                 try
                 {
 
 
-                    double temperature = std::stod(temp);
-                    double humidity = std::stod(hum);
+                    const int sensorID = std::stoi(sensorId);
+                    const double Data = std::stod(sensorData);
 
 
 
-                    if (DB.sensorManager().insertData(temperature, humidity))                  {
+                    if (DB.sensorManager().insertData(sensorID, Data))                  {
                         // std::cout<< "success" << std::endl;
                     }else
                     {
@@ -93,8 +95,8 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
                     }
                 }catch (const std::exception& e)
                 {
-                    std::cout << temp << "; " << hum << std::endl;
-                    std::cout << line << std::endl;
+                    std::cerr << sensorId << "; " << sensorData << std::endl;
+                    std::cerr << line << std::endl;
 
                     std::cerr << "Error in inserting data: " << e.what() << std::endl;
                 }

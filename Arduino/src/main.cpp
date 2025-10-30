@@ -284,6 +284,41 @@ void loop()
       Serial.print(bme.humidity);
       Serial.print("\n");
     };
+
+    struct sensorStruct
+    {
+      int SensorID{};
+      String SensorName{};
+      double Data{};
+    };
+    std::array<sensorStruct,4> sensorsArray = {};
+    sensorsArray[0] = {1, "Temperature", 0};
+    sensorsArray[1] = {2, "Humidity", 0};
+    sensorsArray[2] = {3, "Pressure", 0};
+    sensorsArray[3] = {4, "Gas", 0};
+
+    //Оновлення даних.
+    //Має виконуватись кожного разу коли плануємо збирати та надсилати дані.
+    sensorsArray[0].Data = bme.readTemperature();
+    sensorsArray[1].Data = bme.readHumidity();
+    sensorsArray[2].Data = bme.readPressure();
+    sensorsArray[3].Data = bme.readGas();
+
+    //Відправка на сервер списку сенсорів.
+
+    for (const auto& sensor : sensorsArray)
+    {
+      Serial.print(sensor.SensorID + sensor.SensorName);
+    }
+
+    //Відправка даних
+    for (const auto& sensor : sensorsArray)
+    {
+      Serial.print("ID:" + sensor.SensorID + '|' + sensor.SensorName );
+    }
+
+
+
   }
 
   // unsigned long endTime = millis();

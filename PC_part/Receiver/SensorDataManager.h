@@ -17,6 +17,12 @@ struct SensorDataStruct
     float humidity;
 };
 
+struct SensorsStruct
+{
+    int sensorID{};
+    std::string name{};
+};
+
 class SensorDataManager
 {
     public:
@@ -29,7 +35,7 @@ class SensorDataManager
     bool insertData(int sensorID, double Data);
     std::vector<SensorDataStruct> getLastNReadings(int n);
     std::vector<SensorDataStruct> getReadingsInTimeRange(time_t start_from, time_t endWhen);
-    bool setBasicSensors();
+    bool setBasicSensors(std::vector<const char*> sensorNames);
 
     private:
     sqlite3* db_handle{};
