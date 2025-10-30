@@ -19,10 +19,6 @@ SensorDataManager::SensorDataManager(const std::string& fileName)
 }
 
 
-std::vector<const char*> sensorNames = {
-    "Temperature","Humidity","Gas", "Pressure"
-};
-
 SensorDataManager::~SensorDataManager()
 {
     if (db_handle)
@@ -31,66 +27,6 @@ SensorDataManager::~SensorDataManager()
     }
 }
 
-
-
-bool SensorDataManager::setBasicSensors(std::vector<const char*> sensorNames)
-{
-    if (!db_handle) {
-        std::cerr << "Database handle is null. Cannot insert data." << std::endl;
-        return false;
-    }
-
-    std::lock_guard<std::mutex> lock(db_mutex);
-
-
-    //sensors
-
-    char* errMsg = nullptr;
-
-    if (sqlite3_exec(db_handle,"BEGIN TRANSACTION;", nullptr, nullptr, &errMsg) != SQLITE_OK)
-    {
-        std::cerr << "Begin transaction failed: " << sqlite3_errmsg(db_handle) << std::endl;
-        sqlite3_free(errMsg);
-        return false;
-    }
-
-    const char* sql = "INSERT OR IGNORE INTO SensorsID (SensorName) VALUES (?)";
-    sqlite3_stmt* stmt = nullptr;
-
-    if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr)!= SQLITE_OK)
-    {
-        std::cerr << "Failed to prepare: " << sqlite3_errmsg(db_handle) << std::endl;
-        sqlite3_free(errMsg);
-        return false;
-    }
-
-    bool success = true;
-
-    for (const char* name : sensorNames)
-    {
-        sqlite3_bind_text(stmt, 1, name, -1, SQLITE_STATIC);
-
-        if (sqlite3_step(stmt) != SQLITE_DONE)
-        {
-            std::cerr << "Failed to insert sensor: " << sqlite3_errmsg(db_handle) << std::endl;
-            success = false;
-            break;
-        }
-        sqlite3_reset(stmt);
-    }
-
-    sqlite3_finalize(stmt);
-    const char* final_sql = success ? "COMMIT" : "ROLLBACK";
-
-    if (sqlite3_exec(db_handle, final_sql, nullptr, nullptr, &errMsg) != SQLITE_OK)
-    {
-        std::cerr << "Failed to " << (success ? "commit" : "rollback") << " transaction: " << errMsg << std::endl;
-        sqlite3_free(errMsg);
-        return false;
-    }
-
-    return success;
-}
 
 void SensorDataManager::createTables()
 {
@@ -125,7 +61,7 @@ bool SensorDataManager::insertData(int sensorID, double Data)
 
     std::lock_guard<std::mutex> lock(db_mutex);
 
-    const char* sql = "INSERT INTO SensorReadings (Timestamp, SensorID, Data) VALUES (?,?,?)";
+    const char* sql = "INSERT INTO SensorData (Timestamp, SensorID, Data) VALUES (?,?,?);";
     sqlite3_stmt* stmt = nullptr;
 
     if (sqlite3_prepare_v2(db_handle, sql,-1, &stmt, nullptr)!= SQLITE_OK)
@@ -154,6 +90,126 @@ bool SensorDataManager::insertData(int sensorID, double Data)
     return success;
 }
 
+std::map<int, SensorsStruct> SensorDataManager::getAllSensorsFromDB() {
+    std::map<int, SensorsStruct> dbSensors;
+    std::lock_guard<std::mutex> lock(db_mutex);
+
+    const char* sql = "SELECT SensorID, SensorName FROM SensorsID;";
+    sqlite3_stmt* stmt = nullptr;
+
+    if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Preparation failed: " << sqlite3_errmsg(db_handle) << std::endl;
+        return dbSensors;
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        SensorsStruct sensor;
+        sensor.sensorID = sqlite3_column_int(stmt, 0);
+        const char* name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        if (name) {
+            sensor.name = name;
+        }
+        dbSensors[sensor.sensorID] = sensor;
+    }
+
+    sqlite3_finalize(stmt);
+    return dbSensors;
+}
+
+bool SensorDataManager::updateSensorName(int sensorID, const std::string& newName) {
+    std::lock_guard<std::mutex> lock(db_mutex);
+    const char* sql = "UPDATE SensorsID SET SensorName = ? WHERE SensorID = ?;";
+    sqlite3_stmt* stmt = nullptr;
+
+    if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+       std::cerr << "Failed to prepare: " << sqlite3_errmsg(db_handle) << std::endl;
+        return false;
+    }
+    sqlite3_bind_text(stmt, 1, newName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, sensorID);
+
+    bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+    sqlite3_finalize(stmt);
+    return success;
+}
+
+
+bool SensorDataManager::insertNewSensor(const std::string& name) {
+    if (!db_handle)
+    {
+        std::cerr << "DB handle is null" << std::endl;
+        return false;
+    }
+
+    std::lock_guard<std::mutex> lock(db_mutex);
+
+    const char* sql = "INSERT INTO SensorsID (SensorName) VALUES (?)";
+    sqlite3_stmt* stmt = nullptr;
+
+    if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr) != SQLITE_OK)
+    {
+        std::cerr << "Failed to prepare: " << sqlite3_errmsg(db_handle) << std::endl;
+        return false;
+    }
+
+    sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+
+    bool success = true;
+
+    if (sqlite3_step(stmt) != SQLITE_DONE)
+    {
+        std::cerr << "SQL error: " << sqlite3_errmsg(db_handle) << std::endl;
+        sqlite3_finalize(stmt);
+        success = false;
+    }
+
+    if (sqlite3_finalize(stmt) != SQLITE_OK)
+    {
+        std::cerr << "Finalize failed" << sqlite3_errmsg(db_handle) << std::endl;
+        success = false;
+    }
+
+    return success;
+}
+
+
+void SensorDataManager::synchronizeSensors(const std::map<int, std::string>& arduinoSensors) {
+    if (!db_handle) {
+        std::cerr << "DB handle is null." << std::endl;
+        return;
+    }
+
+    std::map<int, SensorsStruct> dbSensors = getAllSensorsFromDB();
+    std::map<int, bool> processedDbSensors;
+
+    for (const auto& pair : arduinoSensors) {
+        int arduinoId = pair.first;
+        const std::string& arduinoName = pair.second;
+
+        auto it = dbSensors.find(arduinoId);
+        if (it != dbSensors.end()) {
+            SensorsStruct& dbSensor = it->second;
+            processedDbSensors[dbSensor.sensorID] = true;
+
+            if (dbSensor.name != arduinoName) {
+                // Імена не збігаються!
+                if (!updateSensorName(arduinoId, arduinoName)) {
+                    std::cerr << "[Sync] UPDATE FAILED." << std::endl;
+                }
+            }
+        } else {
+            insertNewSensor(arduinoName);
+        }
+    }
+
+    for (const auto& pair : dbSensors) {
+        if (processedDbSensors.find(pair.first) == processedDbSensors.end()) {
+            std::cout << "[Sync] EXTRA! Sensor ID " << pair.first << " ('" << pair.second.name
+                      << "') exists in DB but not on Arduino." << std::endl;
+        }
+    }
+    // std::cout << "[Sync] Synchronization finished." << std::endl;
+}
 
 std::vector<SensorDataStruct> SensorDataManager::getLastNReadings(int n)
 {

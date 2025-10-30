@@ -6,6 +6,7 @@
 #include <mutex>
 #include <vector>
 #include <iostream>
+#include <map>
 #include "./vendor/sqlite3/sqlite3.h"
 #ifndef RECEIVER_SENSORDATAMANAGER_H
 #define RECEIVER_SENSORDATAMANAGER_H
@@ -35,9 +36,12 @@ class SensorDataManager
     bool insertData(int sensorID, double Data);
     std::vector<SensorDataStruct> getLastNReadings(int n);
     std::vector<SensorDataStruct> getReadingsInTimeRange(time_t start_from, time_t endWhen);
-    bool setBasicSensors(std::vector<const char*> sensorNames);
+    void synchronizeSensors(const std::map<int, std::string>& arduinoSensors);
+    bool updateSensorName(int sensorID, const std::string& newName);
+    bool insertNewSensor(const std::string& name);
 
     private:
+    std::map<int, SensorsStruct> getAllSensorsFromDB();
     sqlite3* db_handle{};
     std::mutex db_mutex;
     void createTables();
