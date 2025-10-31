@@ -150,14 +150,17 @@ int main()
                 tm* gmt_time_info = gmtime(&records[i].timestamp);
                 char buffer[80];
                 strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S UTC", gmt_time_info);
-                if (i>0 && records[i].timestamp == records[i-1].timestamp)
+
+                if (i > 0 && records[i].timestamp == records[i-1].timestamp)
                 {
-                    std::cout <<" | " << records[i].SensorName << " | Data " << records[i].Data;
+                    std::cout << " | " << records[i].SensorName << " : " << records[i].Data;
                 }else
                 {
-                    std::cout << buffer << " | :  " << records[i].SensorName << " | Data: " << records[i].Data << std::endl;
+                    std::cout<< std::endl;
+                    std::cout << buffer << " | : " <<  records[i].SensorName << " : "<< records[i].Data ;
                 }
             }
+            std::cout << std::endl;
         }else if (command == "Add_actuator"){
             std::cout << "Write Name of new actuator." << std::endl;
             std::string actuator;
@@ -224,10 +227,11 @@ int main()
                         strftime(TimeBuffer, sizeof(TimeBuffer), "%Y-%m-%d %H:%M:%S UTC", gmt_time_info);
                         if (i > 0 && records[i].timestamp == records[i-1].timestamp)
                         {
-                            std::cout << " | " << records[i].SensorName << " | " << records[i].Data;
+                            std::cout << " | " << records[i].SensorName << " : " << records[i].Data;
                         }else
                         {
-                            std::cout << TimeBuffer << " | : " <<  records[i].SensorName << " | Data: "<< records[i].Data << std::endl;
+                            std::cout << TimeBuffer << " | : " <<  records[i].SensorName << " | : "<< records[i].Data << std::endl;
+
                         }
                     }
                 }

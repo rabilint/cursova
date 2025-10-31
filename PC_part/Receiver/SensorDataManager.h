@@ -38,7 +38,7 @@ class SensorDataManager
     std::vector<RecordDataStruct> getReadingsInTimeRange(time_t start_from, time_t endWhen);
     void synchronizeSensors(const std::map<int, std::string>& arduinoSensors);
     bool updateSensorName(int sensorID, const std::string& newName);
-    bool insertNewSensor(const std::string& name);
+    bool insertNewSensor(int SensorId,const std::string& name);
 
     private:
     std::map<int, SensorsStruct> getAllSensorsFromDB();

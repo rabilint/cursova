@@ -32,7 +32,7 @@ void SensorDataManager::createTables()
 {
     std::lock_guard<std::mutex> lock(db_mutex);
 
-    const char* sql = "CREATE TABLE IF NOT EXISTS SensorsID (SensorID INTEGER PRIMARY KEY AUTOINCREMENT, SensorName TEXT NOT NULL UNIQUE )";
+    const char* sql = "CREATE TABLE IF NOT EXISTS SensorsID (SensorID INTEGER PRIMARY KEY, SensorName TEXT NOT NULL )";
 
     char* errMsg = nullptr;
     if (sqlite3_exec(db_handle, sql, nullptr, nullptr, &errMsg) != SQLITE_OK)
@@ -118,7 +118,7 @@ std::map<int, SensorsStruct> SensorDataManager::getAllSensorsFromDB() {
 
 bool SensorDataManager::updateSensorName(int sensorID, const std::string& newName) {
     std::lock_guard<std::mutex> lock(db_mutex);
-    const char* sql = "UPDATE SensorsID SET SensorName = ? WHERE SensorID = ?;";
+    const char* sql = "UPDATE SensorsID SET SensorName = (?) WHERE SensorID = (?)";
     sqlite3_stmt* stmt = nullptr;
 
     if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -128,13 +128,23 @@ bool SensorDataManager::updateSensorName(int sensorID, const std::string& newNam
     sqlite3_bind_text(stmt, 1, newName.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_int(stmt, 2, sensorID);
 
-    bool success = (sqlite3_step(stmt) == SQLITE_DONE);
-    sqlite3_finalize(stmt);
+    bool success = true;
+    if (sqlite3_step(stmt) != SQLITE_DONE )
+    {
+        std::cout << "SQL error: " << sqlite3_errmsg(db_handle) << std::endl;
+        sqlite3_finalize(stmt);
+        success = false;
+    }
+    if (sqlite3_finalize(stmt) != SQLITE_OK)
+    {
+        std::cout << "Finalize failed" << sqlite3_errmsg(db_handle) << std::endl;
+        success = false;
+    }
     return success;
 }
 
 
-bool SensorDataManager::insertNewSensor(const std::string& name) {
+bool SensorDataManager::insertNewSensor(int SensorID, const std::string& name) {
     if (!db_handle)
     {
         std::cerr << "DB handle is null" << std::endl;
@@ -143,7 +153,7 @@ bool SensorDataManager::insertNewSensor(const std::string& name) {
 
     std::lock_guard<std::mutex> lock(db_mutex);
 
-    const char* sql = "INSERT INTO SensorsID (SensorName) VALUES (?)";
+    const char* sql = "INSERT INTO SensorsID (SensorID, SensorName) VALUES (?,?)";
     sqlite3_stmt* stmt = nullptr;
 
     if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr) != SQLITE_OK)
@@ -152,7 +162,8 @@ bool SensorDataManager::insertNewSensor(const std::string& name) {
         return false;
     }
 
-    sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 1, SensorID);
+    sqlite3_bind_text(stmt, 2, name.c_str(), -1, SQLITE_TRANSIENT);
 
     bool success = true;
 
@@ -198,7 +209,7 @@ void SensorDataManager::synchronizeSensors(const std::map<int, std::string>& ard
                 }
             }
         } else {
-            insertNewSensor(arduinoName);
+            insertNewSensor(arduinoId,arduinoName);
         }
     }
 
@@ -215,7 +226,7 @@ std::vector<RecordDataStruct> SensorDataManager::getLastNReadings(const int n)
 {
     std::lock_guard<std::mutex> lock(db_mutex);
     std::vector<RecordDataStruct> records;
-    const char* sql = "SELECT Timestamp, SensorName, Data FROM SensorData JOIN SensorsID ON SensorData.SensorID = SensorsID.SensorID ORDER BY Timestamp DESC LIMIT ? ";
+    const char* sql = "SELECT Timestamp, SensorName, Data FROM SensorData JOIN SensorsID ON SensorData.SensorID = SensorsID.SensorID ORDER BY Timestamp DESC LIMIT (?) ";
     sqlite3_stmt* stmt = nullptr;
 
     if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr)!= SQLITE_OK)
@@ -246,7 +257,7 @@ std::vector<RecordDataStruct> SensorDataManager::getReadingsInTimeRange(time_t s
 {
     std::lock_guard<std::mutex> lock(db_mutex);
     std::vector<RecordDataStruct> records;
-    const char* sql = "SELECT Timestamp, SensorName, Data FROM SensorData JOIN SensorsID ON SensorData.SensorID = SensorsID.SensorID WHERE Timestamp BETWEEN ? AND ? ORDER BY Timestamp;";
+    const char* sql = "SELECT Timestamp, SensorName, Data FROM SensorData JOIN SensorsID ON SensorData.SensorID = SensorsID.SensorID WHERE Timestamp BETWEEN (?) AND (?) ORDER BY Timestamp;";
     sqlite3_stmt* stmt = nullptr;
 
     if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr)!= SQLITE_OK)
