@@ -11,11 +11,11 @@
 #ifndef RECEIVER_SENSORDATAMANAGER_H
 #define RECEIVER_SENSORDATAMANAGER_H
 
-struct SensorDataStruct
+struct RecordDataStruct
 {
-    time_t timestamp;
-    float temperature;
-    float humidity;
+    time_t timestamp{};
+    std::string SensorName{};
+    double Data{};
 };
 
 struct SensorsStruct
@@ -34,8 +34,8 @@ class SensorDataManager
     SensorDataManager& operator=(const SensorDataManager&) = delete;
 
     bool insertData(int sensorID, double Data);
-    std::vector<SensorDataStruct> getLastNReadings(int n);
-    std::vector<SensorDataStruct> getReadingsInTimeRange(time_t start_from, time_t endWhen);
+    std::vector<RecordDataStruct> getLastNReadings(int n);
+    std::vector<RecordDataStruct> getReadingsInTimeRange(time_t start_from, time_t endWhen);
     void synchronizeSensors(const std::map<int, std::string>& arduinoSensors);
     bool updateSensorName(int sensorID, const std::string& newName);
     bool insertNewSensor(const std::string& name);

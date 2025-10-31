@@ -10,7 +10,7 @@
 constexpr byte numChars = 124;
 char receivedChars[numChars];
 boolean newData = false;
-constexpr long sensorReadInterval = 5000;
+constexpr long sensorReadInterval = 150000;
 unsigned long lastSensorReadTime = 0;
 
 

@@ -67,7 +67,7 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
         {
             if (line == "GiveActuatorInfo\n") //Ось тут частина де відправляються дані на ардуїно
             {
-
+                std::cout << "Arduino send request for handshake" << std::endl;
 
                 std::vector<ActuatorStruct> actuators = DB.actuatorManager().listActuators(); //Отримуємо actuators vector.
 

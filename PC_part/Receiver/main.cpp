@@ -46,7 +46,7 @@ time_t parseUserInputTime(const char* buffer) {
 //
 
 extern std::atomic<bool> running;
-std::vector<SensorDataStruct> records;
+std::vector<RecordDataStruct> records;
 void serialReaderThread(SerialCommunicator& serial, DBManager& myDB);
 
 int main()
@@ -142,14 +142,21 @@ int main()
 
         }else if (command == "Check_DB")
         {
+
             records = mDBManager.sensorManager().getLastNReadings(10);
             std::cout << "All data: " << std::endl;
-            for (auto& [timestamp, temperature, humidity] : records)
+            for (int i =0; i < records.size(); i++)
             {
-                tm* gmt_time_info = gmtime(&timestamp);
+                tm* gmt_time_info = gmtime(&records[i].timestamp);
                 char buffer[80];
                 strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S UTC", gmt_time_info);
-                std::cout << buffer << " | Temperature:  " << temperature << " | Humidity: " << humidity << std::endl;
+                if (i>0 && records[i].timestamp == records[i-1].timestamp)
+                {
+                    std::cout <<" | " << records[i].SensorName << " | Data " << records[i].Data;
+                }else
+                {
+                    std::cout << buffer << " | :  " << records[i].SensorName << " | Data: " << records[i].Data << std::endl;
+                }
             }
         }else if (command == "Add_actuator"){
             std::cout << "Write Name of new actuator." << std::endl;
@@ -210,12 +217,18 @@ int main()
                 {
                     std::cout << from_time << " " << to_time << std::endl;
                     records = mDBManager.sensorManager().getReadingsInTimeRange( from_time, to_time);
-                    for (auto& [timestamp, temperature, humidity] : records)
+                    for (int i = 0; i < records.size(); i++)
                     {
-                        struct ::tm* gmt_time_info = gmtime(&timestamp);
+                        struct ::tm* gmt_time_info = gmtime(&records[0].timestamp);
                         char TimeBuffer[80];
                         strftime(TimeBuffer, sizeof(TimeBuffer), "%Y-%m-%d %H:%M:%S UTC", gmt_time_info);
-                        std::cout << TimeBuffer << " | Temperature: " <<  temperature << " | Humidity: "<< humidity << std::endl;
+                        if (i > 0 && records[i].timestamp == records[i-1].timestamp)
+                        {
+                            std::cout << " | " << records[i].SensorName << " | " << records[i].Data;
+                        }else
+                        {
+                            std::cout << TimeBuffer << " | : " <<  records[i].SensorName << " | Data: "<< records[i].Data << std::endl;
+                        }
                     }
                 }
             }

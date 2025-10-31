@@ -208,14 +208,14 @@ void SensorDataManager::synchronizeSensors(const std::map<int, std::string>& ard
                       << "') exists in DB but not on Arduino." << std::endl;
         }
     }
-    // std::cout << "[Sync] Synchronization finished." << std::endl;
+    std::cout << "[Sync] Synchronization finished." << std::endl;
 }
 
-std::vector<SensorDataStruct> SensorDataManager::getLastNReadings(int n)
+std::vector<RecordDataStruct> SensorDataManager::getLastNReadings(const int n)
 {
     std::lock_guard<std::mutex> lock(db_mutex);
-    std::vector<SensorDataStruct> records;
-    const char* sql = "SELECT Timestamp, Temperature, Humidity FROM SensorReadings ORDER BY Timestamp DESC LIMIT ? ";
+    std::vector<RecordDataStruct> records;
+    const char* sql = "SELECT Timestamp, SensorName, Data FROM SensorData JOIN SensorsID ON SensorData.SensorID = SensorsID.SensorID ORDER BY Timestamp DESC LIMIT ? ";
     sqlite3_stmt* stmt = nullptr;
 
     if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr)!= SQLITE_OK)
@@ -224,14 +224,14 @@ std::vector<SensorDataStruct> SensorDataManager::getLastNReadings(int n)
         return records;
     }
 
-    sqlite3_bind_int(stmt, 1, n);
+    sqlite3_bind_int(stmt, 1, n*4);
 
     while (sqlite3_step(stmt) == SQLITE_ROW)
     {
-        SensorDataStruct record{};
+        RecordDataStruct record{};
         record.timestamp = sqlite3_column_int64(stmt, 0);
-        record.temperature = static_cast<float>(sqlite3_column_double(stmt, 1));
-        record.humidity = static_cast<float>( sqlite3_column_double(stmt, 2));
+        record.SensorName = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        record.Data = sqlite3_column_double(stmt, 2);
         records.push_back(record);
     }
 
@@ -242,11 +242,11 @@ std::vector<SensorDataStruct> SensorDataManager::getLastNReadings(int n)
     return records;
 }
 
-std::vector<SensorDataStruct> SensorDataManager::getReadingsInTimeRange(time_t start_from, time_t endWhen)
+std::vector<RecordDataStruct> SensorDataManager::getReadingsInTimeRange(time_t start_from, time_t endWhen)
 {
     std::lock_guard<std::mutex> lock(db_mutex);
-    std::vector<SensorDataStruct> records;
-    const char* sql = "SELECT Timestamp, Temperature, Humidity FROM SensorReadings WHERE Timestamp BETWEEN ? and ? ORDER BY Timestamp";
+    std::vector<RecordDataStruct> records;
+    const char* sql = "SELECT Timestamp, SensorName, Data FROM SensorData JOIN SensorsID ON SensorData.SensorID = SensorsID.SensorID WHERE Timestamp BETWEEN ? AND ? ORDER BY Timestamp;";
     sqlite3_stmt* stmt = nullptr;
 
     if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr)!= SQLITE_OK)
@@ -260,10 +260,10 @@ std::vector<SensorDataStruct> SensorDataManager::getReadingsInTimeRange(time_t s
 
     while (sqlite3_step(stmt) == SQLITE_ROW)
     {
-        SensorDataStruct record{};
+        RecordDataStruct record{};
         record.timestamp = sqlite3_column_int64(stmt, 0);
-        record.temperature = static_cast<float>( sqlite3_column_double(stmt, 1) );
-        record.humidity = static_cast<float>( sqlite3_column_double(stmt, 2) );
+        record.SensorName = reinterpret_cast<const char*> (sqlite3_column_text(stmt, 1));
+        record.Data = sqlite3_column_double(stmt, 2) ;
         records.push_back(record);
     }
     sqlite3_finalize(stmt);
