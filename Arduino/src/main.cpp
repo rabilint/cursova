@@ -214,6 +214,11 @@ void processCommand()
         currentSenorHandShakeState = SensorHandshakeState::COMPLETE;
         return;
     }
+    if (command.startsWith("RECOMMIT_SYNC"))
+    {
+        currentSenorHandShakeState = SensorHandshakeState::GIVED_SENORS;
+        return;
+    }
 
     // Serial.print("This command ! : "+command + " " + numActuators); //отладка
     for (int i = 0; i < numActuators; i++)

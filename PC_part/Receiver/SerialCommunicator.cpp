@@ -55,7 +55,7 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
     std::map<int, std::string> arduinoSensors;
     int sensorsReceived = 0;
     int numSensors = 0;
-
+    serial.writeLine("RECOMMIT_SYNC");
     while (running)
     {
         if (currentHandshakeState != HandshakeState::COMPLETE)
