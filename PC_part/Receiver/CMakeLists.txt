@@ -15,7 +15,6 @@ set(SQLITE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/sqlite3/sqlite3.c
 add_executable(Receiver main.cpp ${SERIAL_SOURCES} ${SQLITE_SOURCES}
         SerialCommunicator.cpp
         SerialCommunicator.h
-        DatabaseManager.h
 )
 
 if (UNIX AND NOT APPLE)

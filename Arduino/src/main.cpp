@@ -89,7 +89,7 @@ enum class HandshakeState { WAITING_FOR_SIZE, WAITING_FOR_DATA, COMPLETE };
 enum class SensorHandshakeState { GIVED_SENORS, COMPLETE };
 
 HandshakeState currentState = HandshakeState::WAITING_FOR_SIZE;
-SensorHandshakeState currentSenorHandShakeState = SensorHandshakeState::GIVED_SENORS;
+SensorHandshakeState currentSenorHandShakeState = SensorHandshakeState::COMPLETE;
 
 void receiveSerialData()
 {

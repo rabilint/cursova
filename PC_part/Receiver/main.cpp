@@ -7,7 +7,8 @@
 #include <limits>
 #include "SerialCommunicator.h"
 #include <map>
-#include "DatabaseManager.h"
+#include "SensorDataManager.h"
+#include "ActuatorDataManager.h"
 #include "vendor/serial/include/serial/serial.h"
 
 
@@ -47,12 +48,14 @@ time_t parseUserInputTime(const char* buffer) {
 
 extern std::atomic<bool> running;
 std::vector<RecordDataStruct> records;
-void serialReaderThread(SerialCommunicator& serial, DBManager& myDB);
+void serialReaderThread(SerialCommunicator& serial, SensorDataManager& SensorDBM, ActuatorDataManager& ActuatorDBM);
 
 int main()
 {
     SerialCommunicator my_serial("/dev/ttyACM0",9600);
-    DBManager mDBManager("../SensorData.db", "../ActuatorEvents.db");
+    SensorDataManager sensorDBM("../SensorData.db");
+    ActuatorDataManager actuatorDBM("../ActuatorData.db");
+
 
 
 
@@ -61,7 +64,7 @@ int main()
     {
         return -1;
     }
-    std::thread readerTread(serialReaderThread, std::ref(my_serial), std::ref(mDBManager));
+    std::thread readerTread(serialReaderThread, std::ref(my_serial), std::ref(sensorDBM), std::ref(actuatorDBM));
     std::cout << "Serial reader thread started." << std::endl;
     std::cout << "Enter the commands" << std::endl;
     std::string command;
@@ -77,7 +80,7 @@ int main()
         else if (command == "Make_action")
         {
             int input_index = -1;
-            for (std::vector<ActuatorStruct> ActuatorList = mDBManager.actuatorManager().listActuators(); const auto& [ActuatorID, ActuatorName, State] : ActuatorList)
+            for (std::vector<ActuatorStruct> ActuatorList = actuatorDBM.listActuators(); const auto& [ActuatorID, ActuatorName, State] : ActuatorList)
             {
                 std::cout << "| ID: " << ActuatorID;
                 std::cout << " | Name: " << ActuatorName;
@@ -95,7 +98,7 @@ int main()
             }else
             {
                 std::cout << "You want to ON/OFF ?" << std::endl;
-                std::string ActuatorName = mDBManager.actuatorManager().getActuatorName(input_index);
+                std::string ActuatorName = actuatorDBM.getActuatorName(input_index);
                 if (ActuatorName.empty())
                 {
                     std::cerr << "ERR: Actuator with ID " << input_index << " not found." << std::endl;
@@ -121,11 +124,11 @@ int main()
 
                         if (newState != -1)
                         {
-                            if (mDBManager.actuatorManager().UpdateActuatorState(input_index, newState))
+                            if (actuatorDBM.UpdateActuatorState(input_index, newState))
                             {
                                 std::string commandToSend = ActuatorName + commandSuffix;
                                 my_serial.writeLine(commandToSend);
-                                mDBManager.actuatorManager().addEvent(ActuatorName, newState);
+                                actuatorDBM.addEvent(ActuatorName, newState);
                                 std::cout << "Command sent: " << commandToSend << std::endl;
                             }
                         }else
@@ -143,7 +146,7 @@ int main()
         }else if (command == "Check_DB")
         {
 
-            records = mDBManager.sensorManager().getLastNReadings(10);
+            records = sensorDBM.getLastNReadings(10);
             std::cout << "All data: " << std::endl;
             for (int i =0; i < records.size(); i++)
             {
@@ -167,7 +170,7 @@ int main()
             std::getline(std::cin, actuator);
             std::ranges::replace(actuator,' ', '_');
             std::ranges::transform(actuator, actuator.begin(), ::toupper);
-            mDBManager.actuatorManager().addActuator(actuator);
+            actuatorDBM.addActuator(actuator);
         }else if (command == "Delete_Actuator")
         {
             std::cout << "Write name of actuator you want to delete." << std::endl;
@@ -175,7 +178,7 @@ int main()
             std::getline(std::cin, actuator);
             std::ranges::replace(actuator, ' ', '_');
             std::ranges::transform(actuator, actuator.begin(), ::toupper);
-            mDBManager.actuatorManager().deleteActuator(actuator);
+            actuatorDBM.deleteActuator(actuator);
         }else if (command == "Check_last_actuator_events")
         {
             int n = 10;
@@ -183,7 +186,7 @@ int main()
             actuator_events.reserve(n);
             std::cout << "How long log you want?" << std::endl;
             std::cin >> n;
-            actuator_events = mDBManager.actuatorManager().getActuatorsData(n);
+            actuator_events = actuatorDBM.getActuatorsData(n);
             for (const auto& [ActuatorID, State, ActuatorName, timestamp] : actuator_events)
             {
                 tm* gmt_time_info = gmtime(&timestamp);
@@ -219,7 +222,7 @@ int main()
                 } else
                 {
                     std::cout << from_time << " " << to_time << std::endl;
-                    records = mDBManager.sensorManager().getReadingsInTimeRange( from_time, to_time);
+                    records = sensorDBM.getReadingsInTimeRange( from_time, to_time);
                     for (int i = 0; i < records.size(); i++)
                     {
                         struct ::tm* gmt_time_info = gmtime(&records[0].timestamp);

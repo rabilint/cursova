@@ -2,10 +2,12 @@
 // Created by rabilint on 18.09.25.
 //
 #include "SerialCommunicator.h"
+#include "ActuatorDataManager.h"
+#include "SensorDataManager.h"
 #include <iostream>
 #include <thread>
-#include "DatabaseManager.h"
 #include <atomic>
+#include <map>
 #include <cmath>
 
 enum class HandshakeState{WAITING_FOR_SIZE, WAITING_FOR_DATA, COMPARING, COMPLETE};
@@ -49,7 +51,7 @@ std::atomic<bool> running = true;
 
 
 
-void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
+void serialReaderThread(SerialCommunicator& serial,SensorDataManager& SensorDBM, ActuatorDataManager& ActuatorDBM)
 {
     HandshakeState currentHandshakeState = HandshakeState::WAITING_FOR_SIZE;
     std::map<int, std::string> arduinoSensors;
@@ -60,6 +62,7 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
     {
         if (currentHandshakeState != HandshakeState::COMPLETE)
         {
+            serial.writeLine("RECOMMIT_SYNC");
             serial.writeLine("GIVE_SENSORS");
         }
         std::string line = serial.readLine();
@@ -69,7 +72,7 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
             {
                 std::cout << "Arduino send request for handshake" << std::endl;
 
-                std::vector<ActuatorStruct> actuators = DB.actuatorManager().listActuators(); //Отримуємо actuators vector.
+                std::vector<ActuatorStruct> actuators = ActuatorDBM.listActuators(); //Отримуємо actuators vector.
 
                 serial.writeLine("Take: *" + std::to_string(actuators.size()) + "*");
                 //std::cout << "Take: *" << std::to_string(actuators.size()) + "*" << std::endl;
@@ -128,7 +131,7 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
                     }
                 }else if (currentHandshakeState == HandshakeState::COMPARING)
                 {
-                    DB.sensorManager().synchronizeSensors(arduinoSensors);
+                    SensorDBM.synchronizeSensors(arduinoSensors);
                     currentHandshakeState = HandshakeState::COMPLETE;
                     serial.writeLine("SENSORS_SYNCHRONIZED");
                 }
@@ -153,7 +156,7 @@ void serialReaderThread(SerialCommunicator& serial, DBManager& DB)
                         const int sensorIdToInsert = std::stoi(sensorId);
                         const double DataToInsert = std::stod(sensorData);
 
-                        if (DB.sensorManager().insertData(sensorIdToInsert, DataToInsert))                  {
+                        if (SensorDBM.insertData(sensorIdToInsert, DataToInsert))                  {
                             // std::cout<< "success" << std::endl;
                         }else
                         {
