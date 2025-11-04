@@ -43,7 +43,7 @@ class ActuatorDataManager
     bool addActuator(const std::string& Actuator);
     std::vector<ActuatorStruct> listActuators();
     std::string getActuatorName(const int& ActuatorID) const;
-    bool UpdateActuatorState(const int& ActuatorID, const int& state);
+    bool updateActuatorState(const int& ActuatorID, const int& state);
 
     private:
     sqlite3* db_handle{};

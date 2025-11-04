@@ -17,7 +17,7 @@ const std::map<std::string, std::string> commands = {
     {"Check_DB", "display last 10 records."},
     {"Exit","Close Program."},
     {"Add_actuator","Add new actuator."},
-    {"Delete_Actuator","Delete actuator."},
+    {"Delete_actuator","Delete actuator."},
     {"Check_last_actuator_events","Check actuator events history."},
     {"Make_action","Managing actuator"},
 };
@@ -124,7 +124,7 @@ int main()
 
                         if (newState != -1)
                         {
-                            if (actuatorDBM.UpdateActuatorState(input_index, newState))
+                            if (actuatorDBM.updateActuatorState(input_index, newState))
                             {
                                 std::string commandToSend = ActuatorName + commandSuffix;
                                 my_serial.writeLine(commandToSend);
@@ -171,7 +171,7 @@ int main()
             std::ranges::replace(actuator,' ', '_');
             std::ranges::transform(actuator, actuator.begin(), ::toupper);
             actuatorDBM.addActuator(actuator);
-        }else if (command == "Delete_Actuator")
+        }else if (command == "Delete_actuator")
         {
             std::cout << "Write name of actuator you want to delete." << std::endl;
             std::string actuator;

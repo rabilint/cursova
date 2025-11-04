@@ -203,7 +203,7 @@ std::vector<ActuatorStruct> ActuatorDataManager::listActuators()
     return ActuatorList;
 }
 
-bool ActuatorDataManager::UpdateActuatorState(const int& ActuatorID, const int& state)
+bool ActuatorDataManager::updateActuatorState(const int& ActuatorID, const int& state)
 {
     std::lock_guard<std::mutex> lock(db_mutex);
     sqlite3_stmt* stmt = nullptr;

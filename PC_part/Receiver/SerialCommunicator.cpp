@@ -55,7 +55,7 @@ void serialReaderThread(SerialCommunicator& serial,SensorDataManager& SensorDBM,
 {
     HandshakeState currentHandshakeState = HandshakeState::WAITING_FOR_SIZE;
     std::map<int, std::string> arduinoSensors;
-    int sensorsReceived = 0;
+    extern int sensorsReceived;
     int numSensors = 0;
     serial.writeLine("RECOMMIT_SYNC");
     while (running)

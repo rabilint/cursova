@@ -52,7 +52,7 @@ void SensorDataManager::createTables()
 
 
 
-bool SensorDataManager::insertData(int sensorID, double Data)
+bool SensorDataManager::insertData(const int sensorID, const double Data)
 {
     if (!db_handle) {
         std::cerr << "Database handle is null. Cannot insert data." << std::endl;
@@ -116,7 +116,7 @@ std::map<int, SensorsStruct> SensorDataManager::getAllSensorsFromDB() {
     return dbSensors;
 }
 
-bool SensorDataManager::updateSensorName(int sensorID, const std::string& newName) {
+bool SensorDataManager::updateSensorName(const int sensorID, const std::string& newName) {
     std::lock_guard<std::mutex> lock(db_mutex);
     const char* sql = "UPDATE SensorsID SET SensorName = (?) WHERE SensorID = (?)";
     sqlite3_stmt* stmt = nullptr;
@@ -144,7 +144,7 @@ bool SensorDataManager::updateSensorName(int sensorID, const std::string& newNam
 }
 
 
-bool SensorDataManager::insertNewSensor(int SensorID, const std::string& name) {
+bool SensorDataManager::insertNewSensor(const int SensorID, const std::string& name) {
     if (!db_handle)
     {
         std::cerr << "DB handle is null" << std::endl;
@@ -235,7 +235,7 @@ std::vector<RecordDataStruct> SensorDataManager::getLastNReadings(const int n)
         return records;
     }
 
-    sqlite3_bind_int(stmt, 1, n*4);
+    sqlite3_bind_int(stmt, 1, n* sensorsReceived);
 
     while (sqlite3_step(stmt) == SQLITE_ROW)
     {
@@ -253,7 +253,7 @@ std::vector<RecordDataStruct> SensorDataManager::getLastNReadings(const int n)
     return records;
 }
 
-std::vector<RecordDataStruct> SensorDataManager::getReadingsInTimeRange(time_t start_from, time_t endWhen)
+std::vector<RecordDataStruct> SensorDataManager::getReadingsInTimeRange(const time_t start_from, const time_t endWhen)
 {
     std::lock_guard<std::mutex> lock(db_mutex);
     std::vector<RecordDataStruct> records;

@@ -24,6 +24,8 @@ struct SensorsStruct
     std::string name{};
 };
 
+inline int sensorsReceived = 0;
+
 class SensorDataManager
 {
     public:
@@ -39,6 +41,8 @@ class SensorDataManager
     void synchronizeSensors(const std::map<int, std::string>& arduinoSensors);
     bool updateSensorName(int sensorID, const std::string& newName);
     bool insertNewSensor(int SensorId,const std::string& name);
+
+
 
     private:
     std::map<int, SensorsStruct> getAllSensorsFromDB();
