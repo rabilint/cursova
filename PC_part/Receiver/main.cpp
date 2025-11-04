@@ -54,7 +54,7 @@ int main()
 {
     SerialCommunicator my_serial("/dev/ttyACM0",9600);
     SensorDataManager sensorDBM("../SensorData.db");
-    ActuatorDataManager actuatorDBM("../ActuatorData.db");
+    ActuatorDataManager actuatorDBM("../ActuatorEvents.db");
 
 
 
