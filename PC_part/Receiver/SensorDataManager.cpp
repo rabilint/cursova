@@ -219,7 +219,7 @@ void SensorDataManager::synchronizeSensors(const std::map<int, std::string>& ard
                       << "') exists in DB but not on Arduino." << std::endl;
         }
     }
-    std::cout << "[Sync] Synchronization finished." << std::endl;
+    std::cout << "[Sync] Sensor synchronization finished." << std::endl;
 }
 
 std::vector<RecordDataStruct> SensorDataManager::getLastNReadings(const int n)
