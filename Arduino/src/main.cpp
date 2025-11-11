@@ -80,6 +80,11 @@ void turnOffLED(const int pin)
     digitalWrite(pin, LOW);
 }
 
+void unSupportedActuators(const int pin)
+{
+    Serial.print(F("#ERROR:UNSUPPORTED_ACTUATOR!"));
+}
+
 ActuatorStruct* actuatorsArray = nullptr;
 int numActuators = 0;
 int actuatorsReceived = 0;
@@ -177,12 +182,18 @@ void handleInitialStatus()
                     actuatorsArray[actuatorsReceived].on_func = turnOnLED;
                     actuatorsArray[actuatorsReceived].off_func = turnOffLED;
                 }
-                if (name.equalsIgnoreCase("SERVO"))
+                else if (name.equalsIgnoreCase("SERVO"))
                 {
                     actuatorsArray[actuatorsReceived].pin = 8;
                     servo.attach(actuatorsArray[actuatorsReceived].pin);
                     actuatorsArray[actuatorsReceived].on_func = turnOnServo;
                     actuatorsArray[actuatorsReceived].off_func = turnOffServo;
+                }
+                else
+                {
+                    actuatorsArray[actuatorsReceived].pin = NULL;
+                    actuatorsArray[actuatorsReceived].on_func = unSupportedActuators;
+                    actuatorsArray[actuatorsReceived].off_func = unSupportedActuators;
                 }
 
                 // Serial.print("HANDSHAKE: Received actuator " + String(actuatorsReceived + 1) + "/" + String(numActuators) + ": " + name + " | ");

@@ -5,10 +5,11 @@
 #ifndef RECEIVER_SERIALCOMMUNICATOR_H
 #define RECEIVER_SERIALCOMMUNICATOR_H
 
+#include "ISerialPort.h"
 #include <serial/serial.h>
 #include <string>
 
-class SerialCommunicator {
+class SerialCommunicator : public ISerialPort {
 public:
     SerialCommunicator(const std::string& port, uint32_t baudrate);
     ~SerialCommunicator();

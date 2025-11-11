@@ -146,24 +146,7 @@ int main()
         }else if (command == "Check_DB")
         {
 
-            records = sensorDBM.getLastNReadings(10);
-            std::cout << "All data: " << std::endl;
-            for (int i =0; i < records.size(); i++)
-            {
-                tm* gmt_time_info = gmtime(&records[i].timestamp);
-                char buffer[80];
-                strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S UTC", gmt_time_info);
 
-                if (i > 0 && records[i].timestamp == records[i-1].timestamp)
-                {
-                    std::cout << " | " << records[i].SensorName << " : " << records[i].Data;
-                }else
-                {
-                    std::cout<< std::endl;
-                    std::cout << buffer << " | : " <<  records[i].SensorName << " : "<< records[i].Data ;
-                }
-            }
-            std::cout << std::endl;
         }else if (command == "Add_actuator"){
             std::cout << "Write Name of new actuator." << std::endl;
             std::string actuator;
@@ -222,21 +205,7 @@ int main()
                 } else
                 {
                     std::cout << from_time << " " << to_time << std::endl;
-                    records = sensorDBM.getReadingsInTimeRange( from_time, to_time);
-                    for (int i = 0; i < records.size(); i++)
-                    {
-                        struct ::tm* gmt_time_info = gmtime(&records[0].timestamp);
-                        char TimeBuffer[80];
-                        strftime(TimeBuffer, sizeof(TimeBuffer), "%Y-%m-%d %H:%M:%S UTC", gmt_time_info);
-                        if (i > 0 && records[i].timestamp == records[i-1].timestamp)
-                        {
-                            std::cout << " | " << records[i].SensorName << " : " << records[i].Data;
-                        }else
-                        {
-                            std::cout << TimeBuffer << " | : " <<  records[i].SensorName << " | : "<< records[i].Data << std::endl;
-
-                        }
-                    }
+                    //TODO: dsds
                 }
             }
         }else if (command == "Help")

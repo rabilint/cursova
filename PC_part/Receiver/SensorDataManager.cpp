@@ -3,7 +3,6 @@
 //
 
 #include "SensorDataManager.h"
-#include <array>
 #include <cmath>
 
 SensorDataManager::SensorDataManager(const std::string& fileName)

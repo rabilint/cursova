@@ -50,7 +50,7 @@ void SerialCommunicator::writeLine(const std::string& line) {
 std::atomic<bool> running = true;
 
 
-
+//TODO: REMOVE PART BELOW
 void serialReaderThread(SerialCommunicator& serial,SensorDataManager& SensorDBM, ActuatorDataManager& ActuatorDBM)
 {
     HandshakeState currentHandshakeState = HandshakeState::WAITING_FOR_SIZE;
@@ -81,6 +81,13 @@ void serialReaderThread(SerialCommunicator& serial,SensorDataManager& SensorDBM,
                     serial.writeLine("Take: #"  + actuator.ActuatorName + " " + std::to_string(actuator.State) + "#");
                     //std::cout << "Take: #"  + actuator.ActuatorName + " " + std::to_string(actuator.State) + "#" << std::endl;
                 }
+            }
+
+            else if (line == "#ERROR:UNSUPPORTED_ACTUATOR!")
+            {
+                std::cout << "Unable to make action!" << std::endl;
+                std::cout << "Check if you've add correct actuator" << std::endl;
+                std::cout << "or does your model of product support this actuator" << std::endl;
             }
 
             //Відправка на сервер списку сенсорів.
