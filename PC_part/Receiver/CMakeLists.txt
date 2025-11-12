@@ -17,6 +17,11 @@ set(SQLITE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/sqlite3/sqlite3.c
         ActuatorService.cpp
         ActuatorService.h
         ISerialPort.h
+        CommandHandler.cpp
+        CommandHandler.h
+        ICommand.h
+        ProtocolHandler.cpp
+        ProtocolHandler.h
 )
 
 add_executable(Receiver main.cpp ${SERIAL_SOURCES} ${SQLITE_SOURCES}

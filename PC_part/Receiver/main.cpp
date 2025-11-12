@@ -12,15 +12,6 @@
 #include "vendor/serial/include/serial/serial.h"
 
 
-const std::map<std::string, std::string> commands = {
-    {"History", "display records from and to custom time."},
-    {"Check_DB", "display last 10 records."},
-    {"Exit","Close Program."},
-    {"Add_actuator","Add new actuator."},
-    {"Delete_actuator","Delete actuator."},
-    {"Check_last_actuator_events","Check actuator events history."},
-    {"Make_action","Managing actuator"},
-};
 
 SerialCommunicator my_cerial("/dev/ttyACM0",9600);
 
@@ -205,7 +196,6 @@ int main()
                 } else
                 {
                     std::cout << from_time << " " << to_time << std::endl;
-                    //TODO: dsds
                 }
             }
         }else if (command == "Help")
