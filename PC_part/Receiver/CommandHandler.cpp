@@ -50,7 +50,6 @@ bool CommandHandler::executeCommand(const std::string& command)
     {
         return false;
     }
-
     else if (upperCommand == "MAKE_ACTION")
     {
         if (!actuatorService)

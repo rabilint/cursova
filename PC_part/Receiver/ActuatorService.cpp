@@ -35,7 +35,7 @@ std::vector<ActuatorStruct> ActuatorService::listActuators() const
     return repository->listActuators();
 }
 
-bool ActuatorService::controlActuator(int actuatorID, const std::string& action) const
+bool ActuatorService::controlActuator(const int actuatorID, const std::string& action) const
 {
     std::string actuatorName = repository->getActuatorName(actuatorID);
     if (actuatorName.empty())
@@ -78,7 +78,7 @@ bool ActuatorService::controlActuator(int actuatorID, const std::string& action)
 void ActuatorService::displayActuators() const
 {
     auto actuators_list = repository->listActuators();
-    for (auto [ActuatorID, ActuatorName, State] : actuators_list)
+    for (const auto& [ActuatorID, ActuatorName, State] : actuators_list)
     {
         std::cout << "| ID: " << ActuatorID;
         std::cout << " | Name: " << ActuatorName;
@@ -90,7 +90,7 @@ void ActuatorService::displayActuators() const
 void ActuatorService::displayActuatorEvents(const int n) const
 {
     auto events_list = repository->getActuatorsData(n);
-    for (auto [ActuatorID, State, ActuatorName, timestamp] : events_list)
+    for (const auto& [ActuatorID, State, ActuatorName, timestamp] : events_list)
     {
         tm* gmt_time_info = gmtime(&timestamp);
         char buffer[80];

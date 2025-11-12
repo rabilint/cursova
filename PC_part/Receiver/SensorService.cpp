@@ -54,7 +54,7 @@ void SensorService::displayLastNReadings(const int n) const
     if (!records.empty()) std::cout << std::endl;
 }
 
-void SensorService::displayReadingsInTimeRange(time_t start_from, time_t end_when) const
+void SensorService::displayReadingsInTimeRange(const time_t start_from, const time_t end_when) const
 {
     const auto records = getReadingsInTimeRange( start_from, end_when);
     for (int i = 0; i < records.size(); i++)
