@@ -43,7 +43,7 @@ public:
                     const std::shared_ptr<SensorService>& sensorSvc,
                     const std::shared_ptr<ActuatorService>& actuatorSvc);
     void processLine(const std::string& line);
-    bool isHandshakeComplete() const;
+    [[nodiscard]] bool isHandshakeComplete() const;
     void requestSensorSync() const;
 };
 

@@ -202,7 +202,7 @@ void SensorDataManager::synchronizeSensors(const std::map<int, std::string>& ard
             processedDbSensors[dbSensor.sensorID] = true;
 
             if (dbSensor.name != arduinoName) {
-                // Імена не збігаються!
+                // Імена не збігаються
                 if (!updateSensorName(arduinoId, arduinoName)) {
                     std::cerr << "[Sync] UPDATE FAILED." << std::endl;
                 }
@@ -213,15 +213,14 @@ void SensorDataManager::synchronizeSensors(const std::map<int, std::string>& ard
     }
 
     for (const auto& pair : dbSensors) {
-        if (processedDbSensors.find(pair.first) == processedDbSensors.end()) {
+        if (!processedDbSensors.contains(pair.first)) {
             std::cout << "[Sync] EXTRA! Sensor ID " << pair.first << " ('" << pair.second.name
                       << "') exists in DB but not on Arduino." << std::endl;
         }
     }
-    std::cout << "[Sync] Sensor synchronization finished." << std::endl;
 }
 
-std::vector<RecordDataStruct> SensorDataManager::getLastNReadings(const int n)
+std::vector<RecordDataStruct> SensorDataManager::getLastNReadings(const int n, const int amountOfSensors)
 {
     std::lock_guard<std::mutex> lock(db_mutex);
     std::vector<RecordDataStruct> records;
@@ -234,7 +233,7 @@ std::vector<RecordDataStruct> SensorDataManager::getLastNReadings(const int n)
         return records;
     }
 
-    sqlite3_bind_int(stmt, 1, n* sensorsReceived);
+    sqlite3_bind_int(stmt, 1, n * amountOfSensors); 
 
     while (sqlite3_step(stmt) == SQLITE_ROW)
     {
@@ -281,3 +280,29 @@ std::vector<RecordDataStruct> SensorDataManager::getReadingsInTimeRange(const ti
     return records;
 }
 
+int SensorDataManager::amountOfSensors()
+{
+    int amountOfSensors = 0;
+    std::lock_guard<std::mutex> lock(db_mutex);
+    const char* sql = "SELECT COUNT(*) FROM SensorsID";
+    sqlite3_stmt* stmt = nullptr;
+
+    if (sqlite3_prepare_v2(db_handle, sql, -1, &stmt, nullptr)!= SQLITE_OK)
+    {
+        std::cerr << "Preparation failed: " << sqlite3_errmsg(db_handle) << std::endl;
+        return amountOfSensors;
+    }
+
+    sqlite3_bind_int(stmt, 1, amountOfSensors);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        amountOfSensors = sqlite3_column_int(stmt, 0);
+    }
+
+    if (sqlite3_finalize(stmt) != SQLITE_OK)
+    {
+        std::cerr << "Finalize failed" << std::endl;
+    }
+    return amountOfSensors;
+}

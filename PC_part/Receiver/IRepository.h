@@ -32,9 +32,10 @@ class ISensorRepository {
 public:
     virtual ~ISensorRepository() = default;
     virtual bool insertData(int sensorID, double data) = 0;
-    virtual std::vector<RecordDataStruct> getLastNReadings(int n) = 0;
+    virtual std::vector<RecordDataStruct> getLastNReadings(int n,int amountOfSensors) = 0;
     virtual std::vector<RecordDataStruct> getReadingsInTimeRange(time_t startFrom, time_t endWhen) = 0;
     virtual void synchronizeSensors(const std::map<int, std::string>& arduinoSensors) = 0;
+    virtual int amountOfSensors() = 0;
 };
 
 class IActuatorRepository {

@@ -6,28 +6,15 @@
 #include <mutex>
 #include <iostream>
 #include <vector>
+#include "IRepository.h"
 #include "./vendor/sqlite3/sqlite3.h"
 
 #ifndef RECEIVER_ACTUATORDATAMANAGER_H
 #define RECEIVER_ACTUATORDATAMANAGER_H
 
-struct ActuatorDataStruct
-{
-    int ActuatorID;
-    int State;
-    std::string ActuatorName;
-    time_t timestamp;
-};
-
-struct ActuatorStruct
-{
-    int ActuatorID;
-    std::string ActuatorName;
-    int State;
-};
 
 
-class ActuatorDataManager
+class ActuatorDataManager : public IActuatorRepository
 {
     public:
     explicit ActuatorDataManager(const std::string& filename);

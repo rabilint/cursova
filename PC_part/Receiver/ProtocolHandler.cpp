@@ -6,7 +6,7 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
-
+//Конструктор
 ProtocolHandler::ProtocolHandler(const std::shared_ptr<ISerialPort>& serial,
                     const std::shared_ptr<SensorService>& sensorSvc,
                     const std::shared_ptr<ActuatorService>& actuatorSvc) :
@@ -20,11 +20,12 @@ ProtocolHandler::ProtocolHandler(const std::shared_ptr<ISerialPort>& serial,
 }
 
 
+//Парсери:
 
 bool ProtocolHandler::parseSensorSize(const std::string& line, int& size)
 {
     size_t startPos = line.find_first_of('*');
-    size_t endPos = line.find_first_of('*');
+    size_t endPos = line.find_last_of('*');
     if (startPos != std::string::npos && endPos > startPos)
     {
         std::string sizeStr = line.substr(startPos + 1 , endPos - startPos - 1);
@@ -43,7 +44,7 @@ bool ProtocolHandler::parseSensorSize(const std::string& line, int& size)
 bool ProtocolHandler::parseSensorData(const std::string& line, int& sensorID, std::string& sensorName)
 {
     size_t startPos = line.find_first_of('#');
-    size_t endPos = line.find_first_of('#');
+    size_t endPos = line.find_last_of('#');
     if (startPos != std::string::npos && endPos > startPos)
     {
         std::string data = line.substr(startPos + 1 , endPos - startPos - 1);
@@ -91,6 +92,9 @@ bool ProtocolHandler::parseSensorReading(const std::string& line, int& sensorID,
     }
     return false;
 }
+//
+
+//Handlers:
 
 void ProtocolHandler::handleActuatorRequest() const
 {
@@ -98,7 +102,7 @@ void ProtocolHandler::handleActuatorRequest() const
 
     const auto actuators = actuatorService->getActuatorsForHandshake();
 
-    serialPort->writeLine("Take: #" + std::to_string(actuators.size()));
+    serialPort->writeLine("Take: *" + std::to_string(actuators.size()) +  "*");
 
     for (const auto& actuator : actuators)
     {
@@ -125,7 +129,6 @@ void ProtocolHandler::handleSensorHandshake(const std::string& line)
             }
         }
     }
-
     else if (currentHandshakeState == HandshakeState::WAITING_FOR_DATA)
     {
         int sensorID = 0;
@@ -146,7 +149,7 @@ void ProtocolHandler::handleSensorHandshake(const std::string& line)
     {
         sensorService->synchronizeSensors(arduinoSensors);
         currentHandshakeState = HandshakeState::COMPLETE;
-        std::cout << ("[TECH LOG] Sensors Synchronized, server ready to work") << std::endl;
+        std::cout << ("[TECH LOG] Sensors Synchronized, server ready to collect sensors data.") << std::endl;
         serialPort->writeLine("SENSORS_SYNCHRONIZED");
     }
 }
@@ -172,6 +175,8 @@ void ProtocolHandler::handleSensorReading(const std::string& line) const
     }
 }
 
+//
+
 void ProtocolHandler::processLine(const std::string& line)
 {
     if (line.empty()) return;
@@ -187,21 +192,23 @@ void ProtocolHandler::processLine(const std::string& line)
         std::cout << "Check if you've add correct actuator" << std::endl;
         std::cout << "or does your model of product support this actuator" << std::endl;
     }
-    else if (currentHandshakeState != HandshakeState::COMPLETE)
-    {
-        if (line.find("Take: ") != std::string::npos)
-        {
+
+    if (currentHandshakeState != HandshakeState::COMPLETE) {
+        if (line.find("Take: ") != std::string::npos) {
             handleSensorHandshake(line);
         }
         return;
     }
     else
     {
+
         if (line.find("ID:") != std::string::npos)
         {
             handleSensorReading(line);
         }
     }
+
+
 }
 
 bool ProtocolHandler::isHandshakeComplete() const
@@ -216,13 +223,11 @@ void ProtocolHandler::requestSensorSync() const
         const auto currentTime = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastRequestTime).count();
 
-        // Request sync every 2 seconds if not complete
         if (elapsed >= 2) {
+
             serialPort->writeLine("RECOMMIT_SYNC");
             serialPort->writeLine("GIVE_SENSORS");
             lastRequestTime = currentTime;
         }
     }
 }
-
-

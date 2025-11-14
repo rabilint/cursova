@@ -1,7 +1,7 @@
 //
 // Created by rabilint on 11.11.25.
 //
-
+#include <iomanip>
 #include "CommandHandler.h"
 #include <iostream>
 #include <sstream>
@@ -33,7 +33,7 @@ CommandHandler::CommandHandler(const std::shared_ptr<SensorService>& sensorSvc, 
 {
     commandDescriptions =  {
         {"History", "display records from and to custom time."},
-        {"Check_sensors_records", "display last records."},
+        {"Check_last_sensors_records", "display last records."},
         {"Exit","Close Program."},
         {"Add_actuator","Add new actuator."},
         {"Delete_actuator","Delete actuator."},
@@ -82,11 +82,12 @@ bool CommandHandler::executeCommand(const std::string& command)
                 std::cout << "Command sent successfully" << std::endl;
             }
         }
-    } else if (upperCommand == "CHECK_SENSORS_RECORDS")
+    } else if (upperCommand == "CHECK_LAST_SENSORS_RECORDS")
     {
         int input_index = 10;
         std::cout << "Select amount of last readings from DB: " << std::endl;
         std::cin >> input_index ;
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         if (sensorService)
         {
             sensorService->displayLastNReadings(input_index);
@@ -156,6 +157,7 @@ bool CommandHandler::executeCommand(const std::string& command)
         {
             std::cout << "Write To what time: like 27.09.2025|19:47" << std::endl;
             std::cin >> buffer;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             if (time_t to_time = parseUserInputTime(buffer); to_time == -1) {
                 std::cout << "Error: Invalid 'to' time format." << std::endl;
             } else
@@ -177,11 +179,69 @@ bool CommandHandler::executeCommand(const std::string& command)
 
 
 void CommandHandler::displayHelp() {
-    std::cout << "All commands and describe to them" << std::endl;
+
+    if (commandDescriptions.empty()) {
+        std::cout << "Немає доступних команд.\n";
+        return;
+    }
+
+    size_t max_cmd_len = 0;
+    size_t max_desc_len = 0;
     for (const auto& [cmd, desc] : commandDescriptions) {
-        std::cout << cmd << std::endl;
-        std::cout << "   " << desc << std::endl;
+        max_cmd_len = std::max(max_cmd_len, cmd.length());
+        max_desc_len = std::max(max_desc_len, desc.length());
+    }
+
+    constexpr size_t padding = 1;
+    const std::string separator = " | ";
+
+    const size_t col1_width = max_cmd_len;
+    const size_t col2_width = max_desc_len;
+
+    const size_t total_table_width = (padding * 2) + col1_width +
+                                       separator.length() +
+                                       (padding * 2) + col2_width;
+
+
+    std::string top_rule = "|-" + std::string(total_table_width, '-') + "|";
+    std::string mid_rule = "|-" + std::string(col1_width + padding * 2, '-') +
+                           "-+" +
+                           std::string(col2_width + padding * 2, '-') + "-|";
+
+
+    std::string label = "All commands and describe to them";
+    std::cout << top_rule << "\n";
+
+    if (total_table_width > label.length()) {
+        size_t label_pad_total = total_table_width - label.length();
+        size_t label_pad_left = label_pad_total / 2;
+
+        size_t label_pad_right = label_pad_total - label_pad_left;
+
+        std::cout << "| " << std::string(label_pad_left, ' ') << label
+                  << std::string(label_pad_right, ' ') << "|\n";
+    } else {
+        std::cout << "| " << label.substr(0, total_table_width) << "|\n";
+    }
+
+    std::cout << mid_rule << "\n";
+
+
+    for (const auto& [cmd, desc] : commandDescriptions) {
+        std::cout << "| " << std::string(padding, ' '); // Лівий відступ 1-ї колонки
+        std::cout << std::setw(col1_width) << cmd;      // Вміст 1-ї колонки
+        std::cout << std::string(padding, ' ') ; // Правий відступ 1-ї колонки
+
+        std::cout << separator; // Роздільник
+        std::cout << std::left; //Зміна вирівнювача до лівої сторони
+
+        std::cout << std::string(padding, ' '); // Лівий відступ 2-ї колонки
+        std::cout << std::setw(col2_width) << desc;     // Вміст 2-ї колонки
+        std::cout << std::string(padding, ' '); // Правий відступ 2-ї колонки
+
+        std::cout << "|\n"; // Кінець рядка
+        std::cout << mid_rule << "\n"; // Роздільник рядків
+        std::cout << std::right; //Зміна вирівнювача до правої сторони
     }
 }
-
 

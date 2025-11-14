@@ -44,7 +44,7 @@ bool ActuatorService::controlActuator(const int actuatorID, const std::string& a
     }
 
     std::string upperAction = action;
-    std::ranges::transform(actuatorName, upperAction.begin(), ::toupper);
+    std::ranges::transform(upperAction, upperAction.begin(), ::toupper);
 
     int newState = -1;
     std::string actionPrefix;
