@@ -5,7 +5,7 @@
 #include "HandshakeHandler.h"
 
 HandshakeHandler::HandshakeHandler(Serial_Handler* handler) :
-    actuators{},
+    actuators{} ,
     currentActuatorsHandshakeState(HandshakeState::WAITING_FOR_SIZE),
     currentSensorHandshakeState(SensorHandshakeState::COMPLETE),
     serialHandler(handler),
@@ -45,10 +45,19 @@ bool HandshakeHandler::parseActuatorData(const String& line, char name[26], int&
 
         if (spaceIndex != -1) {
             auto sub_name = data.substring(0, spaceIndex);
-            if ((sub_name.length() + 1 ) >= 26 )
+
+
+            if ((sub_name.length() + 1) < 26)
             {
-                strncpy(name, sub_name.c_str(), 26);
+                strcpy(name, sub_name.c_str());
             }
+            else
+            {
+
+                strncpy(name, sub_name.c_str(), 25);
+                name[25] = '\0';
+            }
+
             state = data.substring(spaceIndex + 1).toInt();
             return true;
         }
@@ -87,14 +96,28 @@ bool HandshakeHandler::handleActuatorHandshake(const String& line) {
             return true;
         }
     } else if (currentActuatorsHandshakeState == HandshakeState::WAITING_FOR_DATA) {
-        char name[26];
+        char name[26] = {0};
         int state;
         if (parseActuatorData(line, name, state)) {
+            Serial.print(F("[DEBUG] Parsed Name: '"));
+            Serial.print(name);
+            Serial.print(F("' Length: "));
+            Serial.print(strlen(name));
+
+            // Якщо name порожнє або сміття - ми це побачимо ДО краху
+            if (strlen(name) == 0) {
+                Serial.println(F("[ERROR] Name is empty! Skipping..."));
+                return false; // Не даємо програмі йти далі
+            }
             if (actuatorsReceived < MAX_ACTUATORS)
             {
                 int pin = getPinForActuator(name);
 
                 if (pin != -1) {
+                    if (serialHandler == nullptr) {
+                        Serial.println(F("[ERROR] serialHandler is NULL! Cannot create actuator."));
+                        return false;
+                    }
                     auto actuatorOpt = ActuatorFactory::createActuator(name, pin, state, *serialHandler);
                     if (actuatorOpt.has_value()) {
                         actuators[actuatorsReceived] = actuatorOpt;

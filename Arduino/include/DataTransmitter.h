@@ -15,7 +15,7 @@ private:
 public:
     explicit DataTransmitter(Serial_Handler* handler);
     void transmitSensorData(const std::array<sensorStruct, maxSensors>& sensors) const;
-    void transmitSensors(const std::array<sensorStruct, maxSensors>& sensorsData) const;
+    void transmitSensorReadings(const std::array<sensorStruct, maxSensors>& sensorsData) const;
 };
 
 

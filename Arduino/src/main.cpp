@@ -49,6 +49,11 @@ void setup()
     pressureSensor = std::make_shared<BME680_Sensor>(&bme680Manager, 3, "Pressure", BME680DataType::PRESSURE);
     gasSensor = std::make_shared<BME680_Sensor>(&bme680Manager, 4, "Gas", BME680DataType::GAS);
 
+    sensorManager.addSensor(temperatureSensor);
+    sensorManager.addSensor(humiditySensor);
+    sensorManager.addSensor(pressureSensor);
+    sensorManager.addSensor(gasSensor);
+
     serialHandler.initialize();
 
     matrix.loadSequence(LEDMATRIX_ANIMATION_HEARTBEAT);
@@ -96,7 +101,6 @@ void loop()
 
     if (handshakeHandler.getSensorHandshakeState() == SensorHandshakeState::GIVEN_SENSORS)
     {
-        Serial.println("3");
         auto sensorInfo = sensorManager.getSensorInfo();
         data_transmitter.transmitSensorData(sensorInfo);
     }
@@ -105,19 +109,16 @@ void loop()
         handshakeHandler.getSensorHandshakeState() == SensorHandshakeState::COMPLETE
     )
     {
-        Serial.println("4");
-        static bool actuatorsUpdated = false;
-        if (!actuatorsUpdated) {
-            const auto actuators = handshakeHandler.getActuators();
-            commandProcessor.setActuators(actuators);
-            actuatorsUpdated = true;
-        }
+        const auto actuators = handshakeHandler.getActuators();
+        commandProcessor.setActuators(actuators);
+
+
 
         // Perform sensor reading
         if (sensorManager.shouldReadSensors()) {
             bme680Manager.performReading(); // Read once for all BME680 sensors
             auto sensorData = sensorManager.readAllSensors();
-            data_transmitter.transmitSensorData(sensorData);
+            data_transmitter.transmitSensorReadings(sensorData);
         }
     }
 };
