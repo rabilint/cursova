@@ -27,9 +27,9 @@
 #include "Arduino.h"
 
 #include "bme68x.h"
-#include </home/rabilint/CLionProjects/cursova/Arduino/lib/Adafruit_BusIO-master/Adafruit_I2CDevice.h>
-#include </home/rabilint/CLionProjects/cursova/Arduino/lib/Adafruit_BusIO-master/Adafruit_SPIDevice.h>
-#include <Adafruit_Sensor.h>
+#include "/home/rabilint/CLionProjects/cursova/Arduino/lib/Adafruit_BusIO-master/Adafruit_I2CDevice.h"
+#include "/home/rabilint/CLionProjects/cursova/Arduino/lib/Adafruit_BusIO-master/Adafruit_SPIDevice.h"
+#include "/home/rabilint/Desktop/cursova2/Arduino/lib/Adafruit_Sensor-master/Adafruit_Sensor.h"
 #include <Wire.h>
 
 #define BME68X_DEFAULT_ADDRESS (0x77)    ///< The default I2C address

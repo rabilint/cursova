@@ -1,4 +1,4 @@
-#include "Adafruit_Sensor.h"
+#include "../lib/Adafruit_Sensor-master/Adafruit_Sensor.h"
 
 /**************************************************************************/
 /*!
