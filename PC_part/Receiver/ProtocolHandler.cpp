@@ -90,6 +90,7 @@ bool ProtocolHandler::parseSensorReading(const std::string& line, int& sensorID,
             return false;
         }
     }
+
     return false;
 }
 //
