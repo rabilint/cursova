@@ -16,7 +16,7 @@
     * Arduino Uno R4 WiFi
     * Сенсори BME680 (I2C/SPI інтерфейс)
     * Сервопривід (Servo)
-    * Світлодіоди (LED):
+    * Світлодіоди (LED): Червоний та Жовтий (підключення до GPIO)
     * USB-кабель (Type-C)
 * **PC Software (Linux Recommended):**
     * OS: Linux (проект використовує системні виклики `pthread`, `rt` та шлях `/dev/ttyACM0`)
