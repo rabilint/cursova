@@ -37,7 +37,7 @@
     ```
 
 2.  **Налаштування Arduino (Firmware):**
-    * Відкрийте папку `Arduino` у PlatformIO.
+    * Відкрийте папку `Arduino` у СLion/VS Code з розширенням PlatformIO .
     * **Виправлення шляху:** Відкрийте `Arduino/src/main.cpp`. Знайдіть рядок `#include "/home/rabilint/..."` і замініть його на:
       ```cpp
       #include <Adafruit_BME680.h>
