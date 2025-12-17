@@ -1,54 +1,62 @@
-
 # IoT Sensor & Actuator System
 
 Система моніторингу навколишнього середовища та керування актуаторами на базі Arduino Uno R4 WiFi та ПК-клієнта.
 
 ## Description
 
-Цей проект реалізує комплексну систему IoT, яка складається з двох частин: прошивки для мікроконтролера та програмного забезпечення для ПК.
-Система зчитує показники з сенсорів BME680 (температура, вологість, тиск, газ), відображає статус на LED-матриці та передає дані через Serial-порт на комп'ютер.
-Клієнтська частина (Receiver) приймає дані, зберігає їх у локальну базу даних SQLite та дозволяє керувати підключеними актуаторами (сервоприводами, LED) через командний інтерфейс.
+Цей проект реалізує комплексну IoT систему, що складається з прошивки мікроконтролера та клієнтського застосунку для ПК.
+**Arduino частина** зчитує показники з сенсорів BME680 (температура, вологість, тиск, газ), керує сервоприводами та зовнішніми світлодіодами (LED), а також програє анімацію на вбудованій LED-матриці.
+**ПК частина (Receiver)** отримує дані через Serial-порт, обробляє їх та зберігає історію подій у базі даних SQLite.
 
 ## Getting Started
 
 ### Dependencies
-* **IDE**
-    * CLion or VS Code 
+
 * **Hardware:**
     * Arduino Uno R4 WiFi
-    * Сенсори BME680 (через I2C/SPI)
+    * Сенсори BME680 (I2C/SPI інтерфейс)
     * Сервопривід (Servo)
-    * USB-C кабель для з'єднання
+    * Світлодіоди (LED):
+    * USB-кабель (Type-C)
 * **PC Software (Linux Recommended):**
-    * OS: Linux (код оптимізовано під шляхи `/dev/ttyACM0` та бібліотеки `pthread`, `rt`)
-    * С++ Compiler: підтримка стандарту C++20 (GCC/Clang)
-    * CMake: версія 4.0+ (або 3.20+ з правкою `CMakeLists.txt`)
-    * Бібліотеки: `sqlite3`, `libserial` (або включена `vendor/serial`), `pthread`
+    * OS: Linux (проект використовує системні виклики `pthread`, `rt` та шлях `/dev/ttyACM0`)
+    * C++ Compiler: з підтримкою стандарту **C++20**
+    * CMake: версія **4.0** (або новіша)
+    * Libraries: `sqlite3`, `libserial` (або `vendor/serial`), `pthread`
 * **Arduino Software:**
-    * PlatformIO (CLion or VS Code Extension)
-    * Framework: Arduino Renesas RA
+    * PlatformIO (VS Code Extension)
+    * Framework: Arduino (Renesas RA)
 
 ### Installing
 
 1.  **Клонування репозиторію:**
     ```bash
-    git clone [https://github.com/yourusername/cursova.git](https://github.com/yourusername/cursova.git)
+    git clone [https://github.com/rabilint/cursova.git](https://github.com/rabilint/cursova.git)
     cd cursova
     ```
 
-2.  **Налаштування Arduino (Firmware):**
-    * Відкрийте папку `Arduino` у СLion/VS Code з розширенням PlatformIO .
-    * **Виправлення шляху:** Відкрийте `Arduino/src/main.cpp`. Знайдіть рядок `#include "/home/rabilint/..."` і замініть його на:
-      ```cpp
-      #include <Adafruit_BME680.h>
-      ```
-      або замініть на вашу абсолютну адресу на файл:
-      ```cpp
-      #include ".../Adafruit_BME680-master/Adafruit_BME680.h"
-      ```
-    * Підключіть плату та натисніть **Upload**.
+2.  **Виправлення шляхів (Arduino):**
+    Проект містить абсолютні шляхи до бібліотек, специфічні для середовища розробника. Перед компіляцією **необхідно** замінити їх у всіх файлах папки `Arduino/src/` та `Arduino/include/`.
+    
+    * Використовуйте "Find and Replace" у вашому редакторі.
+    * **Шукати:** `/home/rabilint/CLionProjects/cursova/Arduino/lib/...` (або подібні довгі шляхи).
+    * **Замінити на:** Відповідні стандартні include або ваші абсолютні посилання на файли.
+    
+    *Приклад (main.cpp, BME680_Sensor.h та ін.):*
+    ```cpp
+    // Змінити це:
+    #include "/home/rabilint/CLionProjects/cursova/Arduino/lib/Adafruit_BME680-master/Adafruit_BME680.h"
+    
+    // На це:
+    #include <Adafruit_BME680.h>
+    ```
 
-3.  **Компіляція ПК-частини (Receiver):**
+3.  **Запуск Arduino:**
+    * Відкрийте папку `Arduino` у VS Code (PlatformIO).
+    * Підключіть плату.
+    * Виконайте **Upload**.
+
+4.  **Компіляція ПК-частини (Receiver):**
     ```bash
     cd PC_part/Receiver
     mkdir build
@@ -59,40 +67,43 @@
 
 ### Executing program
 
-1.  Підключіть Arduino до USB-порту.
-2.  Переконайтеся, що пристрій доступний за адресою `/dev/ttyACM0` (якщо ні — змініть порт у `PC_part/Receiver/main.cpp`).
-3.  Запустіть програму:
+1.  Підключіть Arduino до USB.
+2.  Переконайтеся, що порт доступний як `/dev/ttyACM0`.
+    * *Якщо порт інший, змініть `SerialCommunicator("/dev/ttyACM0", ...)` у `PC_part/Receiver/main.cpp`.*
+3.  Запустіть приймач:
     ```bash
     ./Receiver
     ```
-4.  Використовуйте команди в консолі для взаємодії (наприклад, `help` для списку команд).
+4.  Слідуйте підказкам у консолі для введення команд.
 
 ## Help
 
-Типові проблеми:
-* **Помилка CMake Version:** Якщо у вас старіший CMake, змініть перший рядок у `CMakeLists.txt` на `cmake_minimum_required(VERSION 3.20)`.
-* **Доступ до порту:** Якщо виникає помилка "Access denied", виконайте:
-  ```bash
-  sudo chmod a+rw /dev/ttyACM0
-  ```
+**Поширені проблеми:**
+
+* **CMake Error:** Якщо ваша версія CMake старіша за 4.0, змініть перший рядок у `CMakeLists.txt` на `cmake_minimum_required(VERSION 3.20)` (може знадобитися перевірка сумісності).
+* **Compilation Error (No such file):** Ви пропустили якийсь файл при заміні абсолютних шляхів. Перевірте помилки компілятора, щоб знайти точний файл і рядок.
+* **Permission denied:**
+    ```bash
+    sudo chmod a+rw /dev/ttyACM0
+    ```
+
 ## Authors
 
-* Нікіта Майборода
-* email: Nikita.Maiboroda@lnu.edu.ua
+Contributors names and contact info:
+
+* **rabilint** [GitHub Profile](https://github.com/rabilint)
 
 ## Version History
 
 * 0.1
-  * Initial Release
-
-
+    * Initial Release
 
 ## License
 
-Цей проект є загальнодоступним (Public Domain / Open Source). Ви можете вільно використовувати, змінювати та розповсюджувати код.
+This project is licensed under the Public Domain (Unlicense) - see the LICENSE file for details (if present), or consider it free to use.
 
 ## Acknowledgments
 
-* [PlatformIO](https://platformio.org/)
+* [PlatformIO Documentation](https://docs.platformio.org/)
 * [Adafruit BME680 Library](https://github.com/adafruit/Adafruit_BME680)
-* [SQLite](https://www.sqlite.org/)
+* [DomPizzie README Template](https://gist.github.com/DomPizzie/7a5ff55ffa9081f2de27c315f5018afc)
